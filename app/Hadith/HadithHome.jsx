@@ -39,7 +39,6 @@ const HadithHome = () => {
       pathname: "/Hadith/HadithChapters",
       params: {
         bookId: book.id,
-        bookTitle: book.title,
       },
     });
   };
@@ -354,7 +353,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bookTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: theme.Fonts.amiriBold,
     color: "#fff",
     textAlign: "center",
@@ -362,6 +361,7 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+    transform: [{ rotate: "-45deg" }],
   },
   authorContainer: {
     marginTop: theme.Spacing.xs,

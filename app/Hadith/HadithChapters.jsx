@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  getBookById,
   getChaptersByBook,
   getLastChapter,
   saveLastChapter,
@@ -20,34 +22,63 @@ const HadithChapters = () => {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastChapterId, setLastChapterId] = useState(null);
+  const [bookDetails, setBookDetails] = useState({
+    bookTitle: "",
+    bookAuthor: "",
+    birthDate: "",
+  });
   const router = useRouter();
-  const { bookId, bookTitle } = useLocalSearchParams();
+  const { bookId } = useLocalSearchParams();
 
   useEffect(() => {
-    loadChapters();
-  }, []);
+    const loadBookDetails = async () => {
+      if (!bookId) return;
+      try {
+        const parsedBookId = parseInt(bookId);
+        const bookData = await getBookById(parsedBookId);
+        if (bookData) {
+          setBookDetails({
+            bookTitle: bookData.title || "",
+            bookAuthor: bookData.author || "",
+            birthDate: bookData.birthDate || "",
+          });
+        }
+      } catch (error) {
+        console.log("Error loading book details:", error);
+      }
+    };
+    loadBookDetails();
+  }, [bookId]);
 
-  const loadChapters = async () => {
-    setLoading(true);
-    const data = await getChaptersByBook(parseInt(bookId));
-    setChapters(data);
-    
-    // Get last chapter
-    const lastChapter = await getLastChapter(parseInt(bookId));
-    setLastChapterId(lastChapter);
-    
-    setLoading(false);
-  };
+  useFocusEffect(
+    useCallback(() => {
+      if (!bookId) return;
+      const load = async () => {
+        try {
+          setLoading(true);
+          const parsedBookId = parseInt(bookId);
+          const data = await getChaptersByBook(parsedBookId);
+          setChapters(data || []);
+          const lastChapter = await getLastChapter(parsedBookId);
+          setLastChapterId(lastChapter);
+        } catch (error) {
+          console.log("Error loading chapters:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      load();
+    }, [bookId]),
+  );
 
   const handleChapterPress = async (chapter) => {
-    // Save last chapter
     await saveLastChapter(parseInt(bookId), chapter.id);
-    
+
     router.push({
       pathname: "/Hadith/HadithReader",
       params: {
         bookId: bookId,
-        bookTitle: bookTitle,
+        bookTitle: bookDetails.bookTitle,
         chapterId: chapter.id,
         chapterTitle: chapter.title,
       },
@@ -64,23 +95,14 @@ const HadithChapters = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons
-            name="arrow-forward"
-            size={24}
-            color={theme.Colors.primaryLight}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{bookTitle}</Text>
-        <View style={styles.placeholder} />
+        <Text style={styles.headerTitle}>{bookDetails.bookTitle}</Text>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerSubtitle}>{bookDetails.bookAuthor}</Text>
+          <Text style={styles.headerBirthDate}>{bookDetails.birthDate}</Text>
+        </View>
       </View>
 
-      {/* Chapters List */}
       <FlatList
         data={chapters}
         keyExtractor={(item) => item.id.toString()}
@@ -88,7 +110,7 @@ const HadithChapters = () => {
           <TouchableOpacity
             style={[
               styles.chapterItem,
-              item.id === lastChapterId && styles.lastChapterItem,
+              item.id === lastChapterId && item.id !== 0 && styles.lastChapterItem,
             ]}
             onPress={() => handleChapterPress(item)}
             activeOpacity={0.7}
@@ -98,17 +120,17 @@ const HadithChapters = () => {
             </View>
             <View style={styles.chapterInfo}>
               <Text style={styles.chapterTitle}>{item.title}</Text>
-              <Text style={styles.chapterCount}>
-                {item.hadithCount} حديث
-              </Text>
+              {item.id !== 0 && (
+                <Text style={styles.chapterCount}>{item.hadithCount} حديث</Text>
+              )}
             </View>
-            {item.id === lastChapterId && (
+            {item.id === lastChapterId && item.id !== 0 && (
               <View style={styles.continueBadge}>
                 <Text style={styles.continueBadgeText}>متابعة</Text>
               </View>
             )}
             <Ionicons
-              name="chevron-back"
+              name="chevron-forward"
               size={20}
               color={theme.Colors.textGray}
             />
@@ -132,33 +154,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   header: {
-    backgroundColor: theme.Colors.black,
     paddingVertical: theme.Spacing.md,
     paddingHorizontal: theme.Spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-  },
-  backButton: {
-    padding: theme.Spacing.xs,
+    borderBottomColor: theme.Colors.mediumGray,
+    borderBottomWidth: 1,
+    direction: "rtl",
   },
   headerTitle: {
     fontSize: 20,
     fontFamily: theme.Fonts.amiriBold,
     color: theme.Colors.primaryLight,
-    flex: 1,
-    textAlign: "center",
   },
-  placeholder: {
-    width: 40,
+  headerInfo: {
+    marginTop: theme.Spacing.xs,
+    flexDirection: "row",
+    gap: theme.Spacing.sm,
+    justifyContent: "space-between",
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    fontFamily: theme.Fonts.amiriRegular,
+    color: theme.Colors.textGray,
+  },
+  headerBirthDate: {
+    backgroundColor: theme.Colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    fontSize: 14,
+    fontFamily: theme.Fonts.amiriRegular,
+    color: theme.Colors.white,
   },
   listContent: {
     padding: theme.Spacing.md,
   },
   chapterItem: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     alignItems: "center",
     backgroundColor: "#fff",
     padding: theme.Spacing.md,

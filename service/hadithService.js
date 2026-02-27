@@ -57,6 +57,7 @@ export const getBooks = async () => {
       original_id: book.id,
       title: book.metadata?.arabic?.title || "",
       author: book.metadata?.arabic?.author || "",
+      birthDate: book.metadata?.arabic?.birthDate || "",
       chapterCount: book.chapters?.length || 0,
       hadithCount: book.hadiths?.length || 0,
     }));
@@ -80,6 +81,7 @@ export const getBookById = async (bookId) => {
       original_id: book.id,
       title: book.metadata?.arabic?.title || "",
       author: book.metadata?.arabic?.author || "",
+      birthDate: book.metadata?.arabic?.birthDate || "",
       chapterCount: book.chapters?.length || 0,
       hadithCount: book.hadiths?.length || 0,
     };
@@ -141,6 +143,29 @@ export const getHadithsByChapter = async (bookId, chapterId) => {
     return hadiths;
   } catch (error) {
     console.log("❌ Error getHadithsByChapter:", error);
+    return [];
+  }
+};
+
+export const getHadithsByBook = async (bookId) => {
+  try {
+    const bookIndex = bookId - 1;
+    if (bookIndex < 0 || bookIndex >= ALL_BOOKS.length) {
+      return [];
+    }
+
+    const book = ALL_BOOKS[bookIndex];
+    const hadiths = (book.hadiths || []).map((hadith) => ({
+      id: hadith.id,
+      original_id: hadith.id,
+      book_id: bookId,
+      chapter_id: hadith.chapterId,
+      number: hadith.idInBook,
+      text: hadith.arabic || "",
+    }));
+    return hadiths;
+  } catch (error) {
+    console.log("❌ Error getHadithsByBook:", error);
     return [];
   }
 };
