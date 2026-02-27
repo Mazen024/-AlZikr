@@ -4,11 +4,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  StatusBar,
   Image,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import root from "../constants/root.jsx";
 import { useRouter } from "expo-router";
 const { Colors, Fonts, FontSizes, Spacing, BorderRadius } = root;
@@ -52,9 +50,7 @@ const HomePage = () => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconButton}>
           <Text style={styles.icon}>🔔</Text>
@@ -105,13 +101,13 @@ const HomePage = () => {
               <Text style={styles.featureEmoji}>📖</Text>
             </View>
             <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>الكتب السته</Text>
+              <Text style={styles.featureTitle} > جامع كتب الأحاديث </Text>
               <Text style={styles.featureSubtitle}>تصفح الأحاديث</Text>
             </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -121,7 +117,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGray,
   },
   header: {
-    paddingTop: StatusBar.currentHeight,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

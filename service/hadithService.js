@@ -60,7 +60,6 @@ export const getBooks = async () => {
       chapterCount: book.chapters?.length || 0,
       hadithCount: book.hadiths?.length || 0,
     }));
-    console.log(`📚 Loaded ${books.length} books`);
     return books;
   } catch (error) {
     console.log("❌ Error getBooks:", error);
@@ -112,8 +111,6 @@ export const getChaptersByBook = async (bookId) => {
         hadithCount: hadithCount,
       };
     });
-
-    console.log(`📖 Loaded ${chapters.length} chapters for book ${bookId}`);
     return chapters;
   } catch (error) {
     console.log("❌ Error getChaptersByBook:", error);
@@ -141,8 +138,6 @@ export const getHadithsByChapter = async (bookId, chapterId) => {
         number: hadith.idInBook,
         text: hadith.arabic || "",
       }));
-
-    console.log(`📜 Loaded ${hadiths.length} hadiths for chapter ${chapterId}`);
     return hadiths;
   } catch (error) {
     console.log("❌ Error getHadithsByChapter:", error);

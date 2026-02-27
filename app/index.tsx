@@ -1,7 +1,5 @@
-import React, { useEffect } from "react";
-import { StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
 import Welcome from "./components/welcome";
 
 const Index = () => {
@@ -15,17 +13,7 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [router]);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Welcome />
-    </SafeAreaView>
-  );
+  return <Welcome />;
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default Index;

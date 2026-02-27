@@ -6,7 +6,6 @@ import React, {
   useEffect,
 } from "react";
 import { View, StyleSheet, Alert, Modal } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import quranData from "../../assets/quran/quran copy.json";
 import theme from "../constants/root";
@@ -181,11 +180,6 @@ const Quran = () => {
 
   return (
     <>
-      <StatusBar
-        style="light"
-        translucent={false}
-        backgroundColor={theme.Colors.black}
-      />
       <View style={styles.container}>
         <QuranHeader
           currentPage={currentPage}

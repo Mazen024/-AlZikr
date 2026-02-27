@@ -8,6 +8,8 @@ const Colors = {
   primaryLight: "#2d9c7a",
   accentGreen: "#1a7a5e",
 
+  quranbackground: "#F8F1E4",
+
   black: "#000000",
   white: "#ffffff",
   lightGray: "#f7fafc",

@@ -81,6 +81,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: theme.Spacing.xs,
     paddingVertical: theme.Spacing.sm,
+    backgroundColor: theme.Colors.quranbackground,
   },
   darkPage: {
     backgroundColor: theme.Colors.black,
@@ -121,11 +122,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   verseText: {
-    fontSize: 23,
+    fontSize: 20,
     // fontFamily: theme.Fonts.quranText,
     color: theme.Colors.black,
     letterSpacing: 0.3,
-    textAlign: "justify",
+    textAlign: "center",
     lineHeight: 35,
     direction: "rtl",
   },
