@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const bukhari = require("../assets/hadiths/bukhari.json");
 const muslim = require("../assets/hadiths/muslim.json");
@@ -22,7 +22,7 @@ const nawawi40 = require("../assets/hadiths/nawawi40.json");
 const qudsi40 = require("../assets/hadiths/qudsi40.json");
 const shahwaliullah40 = require("../assets/hadiths/shahwaliullah40.json");
 
-const ALL_BOOKS = [
+export const ALL_BOOKS = [
   bukhari,
   muslim,
   abuDawud,
@@ -44,8 +44,8 @@ const ALL_BOOKS = [
 
 // Storage keys
 const STORAGE_KEYS = {
-  LAST_CHAPTER: '@hadith_last_chapter_',
-  LAST_HADITH: '@hadith_last_hadith_',
+  LAST_CHAPTER: "@hadith_last_chapter_",
+  LAST_HADITH: "@hadith_last_hadith_",
 };
 
 // ============= BOOKS =============
@@ -176,7 +176,7 @@ export const saveLastChapter = async (bookId, chapterId) => {
   try {
     await AsyncStorage.setItem(
       `${STORAGE_KEYS.LAST_CHAPTER}${bookId}`,
-      chapterId.toString()
+      chapterId.toString(),
     );
   } catch (error) {
     console.log("❌ Error saving last chapter:", error);
@@ -186,7 +186,7 @@ export const saveLastChapter = async (bookId, chapterId) => {
 export const getLastChapter = async (bookId) => {
   try {
     const chapterId = await AsyncStorage.getItem(
-      `${STORAGE_KEYS.LAST_CHAPTER}${bookId}`
+      `${STORAGE_KEYS.LAST_CHAPTER}${bookId}`,
     );
     return chapterId ? parseInt(chapterId) : null;
   } catch (error) {
@@ -199,7 +199,7 @@ export const saveLastHadithIndex = async (bookId, chapterId, index) => {
   try {
     await AsyncStorage.setItem(
       `${STORAGE_KEYS.LAST_HADITH}${bookId}_${chapterId}`,
-      index.toString()
+      index.toString(),
     );
   } catch (error) {
     console.log("❌ Error saving last hadith:", error);
@@ -209,11 +209,11 @@ export const saveLastHadithIndex = async (bookId, chapterId, index) => {
 export const getLastHadithIndex = async (bookId, chapterId) => {
   try {
     const index = await AsyncStorage.getItem(
-      `${STORAGE_KEYS.LAST_HADITH}${bookId}_${chapterId}`
+      `${STORAGE_KEYS.LAST_HADITH}${bookId}_${chapterId}`,
     );
-    return index ? parseInt(index) : 0;
+    return index !== null ? parseInt(index) : null;
   } catch (error) {
     console.log("❌ Error getting last hadith:", error);
-    return 0;
+    return null;
   }
 };

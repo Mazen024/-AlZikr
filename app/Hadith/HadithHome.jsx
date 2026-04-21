@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -18,11 +17,67 @@ import theme from "../constants/root";
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 48) / 2;
 
+const FAMOUS_HADITHS = [
+  {
+    text: "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
+    ref: "رواه البخاري ومسلم",
+  },
+  {
+    text: "الدِّينُ النَّصِيحَةُ",
+    ref: "رواه مسلم",
+  },
+  {
+    text: "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ",
+    ref: "رواه البخاري ومسلم",
+  },
+  {
+    text: "مَنْ صَمَتَ نَجَا",
+    ref: "رواه البخاري ومسلم",
+  },
+];
+
+const BOOK_COLORS = [
+  { main: "#243b6b" },
+  { main: "#1f4a36" },
+  { main: "#6b2a2a" },
+  { main: "#7a3e1d" },
+  { main: "#4b2c5e" },
+  { main: "#255e6b" },
+  { main: "#5a3a1a" },
+  { main: "#3e4a56" },
+  { main: "#42561e" },
+  { main: "#3f2a6b" },
+  { main: "#1f5a55" },
+  { main: "#6b243a" },
+  { main: "#1f4a6b" },
+  { main: "#42561e" },
+  { main: "#7a3e1d" },
+  { main: "#6b5a1f" },
+  { main: "#5a2a5e" },
+];
+
+function darkenColor(hex, percent = 20) {
+  const num = parseInt(hex.replace("#", ""), 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+
+  r = Math.max(0, r - (r * percent) / 100);
+  g = Math.max(0, g - (g * percent) / 100);
+  b = Math.max(0, b - (b * percent) / 100);
+
+  return `#${Math.round(r).toString(16).padStart(2, "0")}${Math.round(g)
+    .toString(16)
+    .padStart(2, "0")}${Math.round(b).toString(16).padStart(2, "0")}`;
+}
+
 const HadithHome = () => {
   const [books, setBooks] = useState([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
-  const slideAnim = useState(new Animated.Value(30))[0];
-  const fadeAnim = useState(new Animated.Value(0))[0];
+
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
   const router = useRouter();
 
   useEffect(() => {
@@ -36,33 +91,12 @@ const HadithHome = () => {
 
   const handleBookPress = (book) => {
     router.push({
-      pathname: "/Hadith/HadithChapters",
-      params: {
-        bookId: book.id,
-      },
+      pathname: "/Hadith/HadithReader",
+      params: { bookId: book.id },
     });
   };
 
-  const famousHadiths = [
-    {
-      text: "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
-      ref: "رواه البخاري ومسلم",
-    },
-    {
-      text: "الدِّينُ النَّصِيحَةُ",
-      ref: "رواه مسلم",
-    },
-    {
-      text: "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ",
-      ref: "رواه البخاري ومسلم",
-    },
-    {
-      text: "مَنْ صَمَتَ نَجَا",
-      ref: "رواه البخاري ومسلم",
-    },
-  ];
-
-  useEffect(() => {
+  const playEntranceAnimation = () => {
     slideAnim.setValue(30);
     fadeAnim.setValue(0);
 
@@ -78,71 +112,27 @@ const HadithHome = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  };
+
+  useEffect(() => {
+    playEntranceAnimation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      slideAnim.setValue(30);
-      fadeAnim.setValue(0);
-
       setCurrentHadithIndex((prev) =>
-        prev === famousHadiths.length - 1 ? 0 : prev + 1,
+        prev === FAMOUS_HADITHS.length - 1 ? 0 : prev + 1,
       );
-
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      playEntranceAnimation();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fadeAnim, famousHadiths.length, slideAnim]);
-
-  function darkenColor(hex, percent = 20) {
-    const num = parseInt(hex.replace("#", ""), 16);
-    let r = (num >> 16) & 0xff;
-    let g = (num >> 8) & 0xff;
-    let b = num & 0xff;
-
-    r = Math.max(0, r - (r * percent) / 100);
-    g = Math.max(0, g - (g * percent) / 100);
-    b = Math.max(0, b - (b * percent) / 100);
-
-    return `#${Math.round(r).toString(16).padStart(2, "0")}${Math.round(g)
-      .toString(16)
-      .padStart(2, "0")}${Math.round(b).toString(16).padStart(2, "0")}`;
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const renderBookItem = ({ item, index }) => {
-    const bookColors = [
-      { main: "#243b6b" },
-      { main: "#1f4a36" },
-      { main: "#6b2a2a" },
-      { main: "#7a3e1d" },
-      { main: "#4b2c5e" },
-      { main: "#255e6b" },
-      { main: "#5a3a1a" },
-      { main: "#3e4a56" },
-      { main: "#42561e" },
-      { main: "#3f2a6b" },
-      { main: "#1f5a55" },
-      { main: "#6b243a" },
-      { main: "#1f4a6b" },
-      { main: "#42561e" },
-      { main: "#7a3e1d" },
-      { main: "#6b5a1f" },
-      { main: "#5a2a5e" },
-    ];
-
-    const colors = bookColors[index % bookColors.length];
+    const colors = BOOK_COLORS[index % BOOK_COLORS.length];
     const mainColor = colors.main;
     const spineStart = darkenColor(mainColor, 45);
     const spineEnd = darkenColor(mainColor, 5);
@@ -220,10 +210,10 @@ const HadithHome = () => {
       >
         <Text style={styles.verseIntro}>قال رسول الله ﷺ</Text>
         <Text style={styles.verseArabic}>
-          {famousHadiths[currentHadithIndex]?.text}
+          {FAMOUS_HADITHS[currentHadithIndex]?.text}
         </Text>
         <Text style={styles.verseReference}>
-          {famousHadiths[currentHadithIndex]?.ref}
+          {FAMOUS_HADITHS[currentHadithIndex]?.ref}
         </Text>
       </Animated.View>
 
@@ -279,7 +269,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 16,
     borderRightWidth: 4,
-    borderRightColor: "#6b5a1f", // ذهبي هادئ
+    borderRightColor: "#6b5a1f",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -299,7 +289,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 32,
   },
-
   verseReference: {
     marginTop: 8,
     fontSize: 13,

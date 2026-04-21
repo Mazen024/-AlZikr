@@ -7,7 +7,6 @@
     "icon": "./assets/images/logo.png",
     "scheme": "al-zikr",
     "userInterfaceStyle": "automatic",
-    // "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -16,7 +15,6 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#F8F1E4"
       },
-      // "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.yourname.alzikr"
     },
@@ -38,7 +36,8 @@
           }
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "@react-native-voice/voice"
     ],
     "experiments": {
       "typedRoutes": true,
