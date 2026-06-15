@@ -3,25 +3,71 @@ const fontAssets = {
   UthmanicHafs: require("../../assets/fonts/uthmanic_hafs_v22.ttf"),
 };
 
-const Colors = {
-  primaryDark: "#0a4d3c",
-  primaryLight: "#2d9c7a",
-  accentGreen: "#1a7a5e",
+const BOOK_PALETTES = [
+  ["#1a2e4a", "#0d1a2e"],
+  ["#2a1a0e", "#160d06"],
+  ["#1a2a1a", "#0e160e"],
+  ["#2e1a2e", "#1a0d1a"],
+  ["#2e2a0e", "#1a160a"],
+  ["#0e2a2e", "#06161a"],
+  ["#2e1a1a", "#1a0d0d"],
+  ["#1a1a2e", "#0d0d1a"],
+  ["#1e2a1a", "#10160e"],
+  ["#2a1e0e", "#160f06"],
+];
 
+const Tcolors = {
   quranbackground: "#F8F1E4",
 
-  black: "#000000",
+   // ===== Background Colors =====
+  primaryBackground: "#0c1520",          // الخلفية الرئيسية الداكنة
+  secondaryBackground: "#111e2d",        // خلفية ثانوية للعناصر الداخلية
+  heroGradientStart: "#1a3a5c",          // بداية التدرج اللوني للهيدر
+  heroGradientEnd: "#0d2137",            // نهاية التدرج اللوني للهيدر
+
+  // ===== Primary Brand Colors =====
+  primaryLight: "#2d9c7a",               // اللون الأساسي الأخضر الفاتح
+  primaryDark: "#0a4d3c",
+  accentGreen: "#1a7a5e",
+  primaryLightTransparent: "rgba(78,202,139,0.10)", // نسخة شفافة من اللون الأساسي
+
+  // ===== Basic Colors =====
   white: "#ffffff",
+  black: "#000000",
+  transparent: "#ffffff00",
+
+  // ===== Text Colors =====
+  primaryText: "rgba(255,255,255,0.85)", // النص الرئيسي
+  secondaryText: "rgba(255,255,255,0.45)", // النص الثانوي
+  tertiaryText: "rgba(255,255,255,0.25)", // النص الخافت
+
+  // ===== Card Colors =====
+  cardBackground: "rgba(255,255,255,0.05)", // خلفية البطاقات
+  cardBorder: "rgba(255,255,255,0.08)",     // حدود البطاقات
+
+  // ===== Pill / Badge Colors =====
+  pillBackground: "rgba(255,255,255,0.08)", // خلفية العناصر الصغيرة (Pills)
+  pillBorder: "rgba(255,255,255,0.12)",     // حدود العناصر الصغيرة
+
+  // ===== Status Colors =====
+  recordingRed: "#dc2626",
+  warningYellow: "#f59e0b",
+  successGreen: "#10b981",
+
+  // ===== Other Existing App Colors =====
+  quranBackground: "#F8F1E4",
   lightGray: "#f7fafc",
   mediumGray: "#e2e8f0",
   darkGray: "#2d3748",
   textGray: "#718096",
 
-  recordingRed: "#dc2626",
-  warningYellow: "#f59e0b",
-  successGreen: "#10b981",
-
-  transparent: "#ffffff00",
+  border: "rgba(78,202,139,0.12)",
+  borderBright: "rgba(78,202,139,0.35)",
+  gold: "#4eca8b",
+  goldLight: "#7edba8",
+  goldDim: "rgba(78,202,139,0.45)",
+  textSub: "rgba(255, 255, 255, 0.38)",
+  textMid: "rgba(255,255,255,0.65)",
 };
 
 const Fonts = {
@@ -31,7 +77,7 @@ const Fonts = {
 
   amiriRegular: "Amiri-Regular",
   amiriBold: "Amiri-Bold",
-  quranText: 'UthmanicHafs',
+  quranText: "UthmanicHafs",
 };
 
 const FontSizes = {
@@ -63,9 +109,10 @@ const BorderRadius = {
 };
 
 export default {
-  Colors,
   Fonts,
   FontSizes,
   Spacing,
   BorderRadius,
+  Tcolors,
+  BOOK_PALETTES,
 };

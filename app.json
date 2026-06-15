@@ -10,24 +10,34 @@
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/2b732e0d-dcfd-41c8-93bb-a81caa4a5bfb"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 1,
+      "package": "com.mazen.alzikr",
+      "permissions": ["INTERNET", "INTERNET"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#F8F1E4"
       },
-      "predictiveBackGestureEnabled": false,
-      "package": "com.yourname.alzikr"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#4eca8b",
+          "sounds": []
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -42,7 +52,7 @@
         }
       ],
       "expo-asset",
-      "@react-native-voice/voice"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -53,6 +63,9 @@
       "eas": {
         "projectId": "2b732e0d-dcfd-41c8-93bb-a81caa4a5bfb"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

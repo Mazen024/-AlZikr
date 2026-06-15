@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
   FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,7 +16,8 @@ import { getBooks } from "../../service/hadithService";
 import theme from "../constants/root";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 48) / 2;
+
+const BOOK_PALETTES = theme.BOOK_PALETTES;
 
 const FAMOUS_HADITHS = [
   {
@@ -32,360 +34,489 @@ const FAMOUS_HADITHS = [
   },
   {
     text: "مَنْ صَمَتَ نَجَا",
+    ref: "رواه الترمذي",
+  },
+  {
+    text: "الْحَيَاءُ شُعْبَةٌ مِنَ الإِيْمَانِ",
     ref: "رواه البخاري ومسلم",
   },
 ];
 
-const BOOK_COLORS = [
-  { main: "#243b6b" },
-  { main: "#1f4a36" },
-  { main: "#6b2a2a" },
-  { main: "#7a3e1d" },
-  { main: "#4b2c5e" },
-  { main: "#255e6b" },
-  { main: "#5a3a1a" },
-  { main: "#3e4a56" },
-  { main: "#42561e" },
-  { main: "#3f2a6b" },
-  { main: "#1f5a55" },
-  { main: "#6b243a" },
-  { main: "#1f4a6b" },
-  { main: "#42561e" },
-  { main: "#7a3e1d" },
-  { main: "#6b5a1f" },
-  { main: "#5a2a5e" },
-];
+function BookCard({ item, index, onPress }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const palette = BOOK_PALETTES[index % BOOK_PALETTES.length];
 
-function darkenColor(hex, percent = 20) {
-  const num = parseInt(hex.replace("#", ""), 16);
-  let r = (num >> 16) & 0xff;
-  let g = (num >> 8) & 0xff;
-  let b = num & 0xff;
+  const handlePressIn = () =>
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      speed: 30,
+    }).start();
 
-  r = Math.max(0, r - (r * percent) / 100);
-  g = Math.max(0, g - (g * percent) / 100);
-  b = Math.max(0, b - (b * percent) / 100);
+  const handlePressOut = () =>
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+    }).start();
 
-  return `#${Math.round(r).toString(16).padStart(2, "0")}${Math.round(g)
-    .toString(16)
-    .padStart(2, "0")}${Math.round(b).toString(16).padStart(2, "0")}`;
+  return (
+    <TouchableOpacity
+      onPress={() => onPress(item)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={1}
+    >
+      <Animated.View
+        style={[styles.bookCard, { transform: [{ scale: scaleAnim }] }]}
+      >
+        <LinearGradient
+          colors={palette}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.bookGradient}
+        >
+          <Text style={styles.cornerOrnTL}>✦</Text>
+          <Text style={styles.cornerOrnBR}>✦</Text>
+
+          <View style={styles.bookTopLine} />
+
+          <View style={styles.bookInner}>
+            <Text style={styles.bookIndexNum}>
+              {(index + 1).toLocaleString("ar")}
+            </Text>
+            <Text style={styles.bookTitleCard} numberOfLines={3}>
+              {item.title}
+            </Text>
+            <Text style={styles.bookAuthorCard} numberOfLines={1}>
+              {item.author}
+            </Text>
+          </View>
+
+          <View style={styles.bookStats}>
+            <View style={styles.statChip}>
+              <Text style={styles.statVal}>
+                {item.hadithCount.toLocaleString("ar")}
+              </Text>
+              <Text style={styles.statKey}>حديث</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statChip}>
+              <Text style={styles.statVal}>
+                {item.chapterCount.toLocaleString("ar")}
+              </Text>
+              <Text style={styles.statKey}>باب</Text>
+            </View>
+          </View>
+
+          {/* Gold border line bottom */}
+          <View style={styles.bookBottomLine} />
+        </LinearGradient>
+      </Animated.View>
+    </TouchableOpacity>
+  );
 }
 
-const HadithHome = () => {
+// ── Main component ─────────────────────────────────────────────────────────
+export default function HadithHome() {
   const [books, setBooks] = useState([]);
-  const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
+  const [currentIdx, setCurrentIdx] = useState(0);
 
-  const slideAnim = useRef(new Animated.Value(30)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(12)).current;
+  const headerFade = useRef(new Animated.Value(0)).current;
 
   const router = useRouter();
 
   useEffect(() => {
     loadBooks();
-  }, []);
+    Animated.timing(headerFade, {
+      toValue: 1,
+      duration: 700,
+      useNativeDriver: true,
+    }).start();
+    animateVerse();
+  }, [animateVerse, headerFade]);
 
   const loadBooks = async () => {
     const data = await getBooks();
     setBooks(data);
   };
 
-  const handleBookPress = (book) => {
+  const animateVerse = useCallback(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(14);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCurrentIdx((p) => (p + 1) % FAMOUS_HADITHS.length);
+      animateVerse();
+    }, 6000);
+    return () => clearInterval(id);
+  }, [animateVerse]);
+
+  const handleBookPress = (book) =>
     router.push({
       pathname: "/Hadith/HadithReader",
       params: { bookId: book.id },
     });
-  };
 
-  const playEntranceAnimation = () => {
-    slideAnim.setValue(30);
-    fadeAnim.setValue(0);
-
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  useEffect(() => {
-    playEntranceAnimation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentHadithIndex((prev) =>
-        prev === FAMOUS_HADITHS.length - 1 ? 0 : prev + 1,
-      );
-      playEntranceAnimation();
-    }, 5000);
-
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const renderBookItem = ({ item, index }) => {
-    const colors = BOOK_COLORS[index % BOOK_COLORS.length];
-    const mainColor = colors.main;
-    const spineStart = darkenColor(mainColor, 45);
-    const spineEnd = darkenColor(mainColor, 5);
-
-    return (
-      <TouchableOpacity
-        style={styles.bookWrapper}
-        onPress={() => handleBookPress(item)}
-        activeOpacity={0.8}
-      >
-        <View style={[styles.bookCover, { backgroundColor: mainColor }]}>
-          <View style={styles.bookContent}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.bookTitle} numberOfLines={3}>
-                {item.title}
-              </Text>
-            </View>
-
-            <View style={styles.authorContainer}>
-              <Text style={styles.bookAuthor} numberOfLines={2}>
-                {item.author}
-              </Text>
-            </View>
-
-            <View style={styles.statsContainer}>
-              <View style={styles.statBadge}>
-                <Ionicons name="list" size={14} color="#fff" />
-                <Text style={styles.statText}>{item.chapterCount} باب</Text>
-              </View>
-              <View style={styles.statBadge}>
-                <Ionicons name="book" size={14} color="#fff" />
-                <Text style={styles.statText}>{item.hadithCount}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-        <LinearGradient
-          colors={[spineStart, spineEnd]}
-          style={styles.bookSpine}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 0 }}
-        >
-          <Text style={styles.spineText} numberOfLines={3}>
-            {item.title}
-          </Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  };
+  const hadith = FAMOUS_HADITHS[currentIdx];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Ionicons
-            name="library"
-            size={32}
-            color={theme.Colors.primaryLight}
-          />
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>جامع الأحاديث</Text>
-            <Text style={styles.headerSubtitle}>{books.length} كتاب حديثي</Text>
-          </View>
-        </View>
-      </View>
-
-      <Animated.View
-        style={[
-          styles.verseCard,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
-          },
-        ]}
-      >
-        <Text style={styles.verseIntro}>قال رسول الله ﷺ</Text>
-        <Text style={styles.verseArabic}>
-          {FAMOUS_HADITHS[currentHadithIndex]?.text}
-        </Text>
-        <Text style={styles.verseReference}>
-          {FAMOUS_HADITHS[currentHadithIndex]?.ref}
-        </Text>
-      </Animated.View>
-
-      <FlatList
-        data={books}
-        renderItem={renderBookItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+    <View style={styles.root}>
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-      />
+        contentContainerStyle={{ paddingBottom: 48 }}
+      >
+        <Animated.View style={[styles.header, { opacity: headerFade }]}>
+          <LinearGradient
+            colors={[
+              theme.Tcolors.heroGradientStart,
+              theme.Tcolors.primaryBackground,
+            ]}
+            style={styles.headerGrad}
+          >
+            <View style={styles.headerBadge}>
+              <Text style={styles.headerBadgeText}>ﷺ</Text>
+            </View>
+            <View style={styles.headerRight}>
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={styles.headerTitle}>جامع كتب الأحاديث</Text>
+                <Text style={styles.headerSub}>
+                  {books.length.toLocaleString("ar")} كتاب · المكتبة النبوية
+                </Text>
+              </View>
+              <View style={styles.iconCircle}>
+                <Ionicons name="library" size={20} color={theme.Tcolors.gold} />
+              </View>
+            </View>
+          </LinearGradient>
+          <View style={styles.headerUnderline} />
+        </Animated.View>
+
+        <View style={styles.heroWrap}>
+          <LinearGradient
+            colors={["#0e1825", "#07090f"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+          >
+            <View style={[styles.frameCorner, styles.frameTL]} />
+            <View style={[styles.frameCorner, styles.frameTR]} />
+            <View style={[styles.frameCorner, styles.frameBL]} />
+            <View style={[styles.frameCorner, styles.frameBR]} />
+
+            <Animated.View
+              style={[
+                styles.heroContent,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}
+            >
+              <Text style={styles.heroIntroLabel}>قال رسول الله</Text>
+              <Text style={styles.heroProphetSymbol}>ﷺ</Text>
+
+              <View style={styles.heroDivider} />
+
+              <Text style={styles.heroText}>{hadith.text}</Text>
+
+              <View style={styles.heroDivider} />
+
+              <View style={styles.heroRefRow}>
+                <View style={styles.heroRefLine} />
+                <Text style={styles.heroRef}>{hadith.ref}</Text>
+                <View style={styles.heroRefLine} />
+              </View>
+            </Animated.View>
+          </LinearGradient>
+        </View>
+
+        <View style={styles.sectionHead}>
+          <View style={styles.sectionLine} />
+          <Text style={styles.sectionTitle}>الكتب</Text>
+          <View style={styles.sectionLine} />
+        </View>
+
+        <FlatList
+          data={books}
+          renderItem={({ item, index }) => (
+            <BookCard item={item} index={index} onPress={handleBookPress} />
+          )}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={styles.gridContent}
+          scrollEnabled={false}
+        />
+      </ScrollView>
     </View>
   );
-};
+}
 
+// ── Styles ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: theme.Colors.lightGray,
+    backgroundColor: theme.Tcolors.primaryBackground,
   },
   header: {
-    direction: "rtl",
-    paddingVertical: theme.Spacing.xs,
-    paddingHorizontal: theme.Spacing.md,
-    borderBottomWidth: 1,
-    borderColor: "#ddd",
+    marginBottom: 0,
   },
-  headerContent: {
+  headerGrad: {
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.Spacing.md,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 25,
+    paddingBottom: 16,
   },
-  headerText: {
-    flex: 1,
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
+  iconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(212,175,90,0.1)",
+    borderWidth: 1,
+    borderColor: theme.Tcolors.border,
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 18,
+    color: theme.Tcolors.white,
     fontFamily: theme.Fonts.amiriBold,
-    color: theme.Colors.primaryLight,
+    letterSpacing: 0.5,
+  },
+  headerSub: {
+    fontSize: 12,
+    color: theme.Tcolors.textSub,
+    fontFamily: theme.Fonts.cairoRegular,
+    marginTop: 2,
+  },
+  headerBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(212,175,90,0.08)",
+    borderWidth: 1,
+    borderColor: theme.Tcolors.borderBright,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerBadgeText: { fontSize: 18, color: theme.Tcolors.gold },
+  headerUnderline: {
+    height: 1,
+    backgroundColor: theme.Tcolors.border,
+    marginHorizontal: 20,
+  },
+
+  // Hero
+  heroWrap: { margin: 16, borderRadius: 20, overflow: "hidden" },
+  hero: {
+    padding: 15,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.Tcolors.border,
+    overflow: "hidden",
+    minHeight: 200,
+    justifyContent: "center",
+  },
+
+  frameCorner: {
+    position: "absolute",
+    width: 16,
+    height: 16,
+    borderColor: theme.Tcolors.goldDim,
+  },
+  frameTL: {
+    top: 12,
+    left: 12,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+  },
+  frameTR: {
+    top: 12,
+    right: 12,
+    borderTopWidth: 1,
+    borderRightWidth: 1,
+  },
+  frameBL: {
+    bottom: 12,
+    left: 12,
+    borderBottomWidth: 1,
+    borderLeftWidth: 1,
+  },
+  frameBR: {
+    bottom: 12,
+    right: 12,
+    borderBottomWidth: 1,
+    borderRightWidth: 1,
+  },
+
+  heroContent: { alignItems: "center" },
+  heroIntroLabel: {
+    fontSize: 12,
+    color: theme.Tcolors.textSub,
+    fontFamily: theme.Fonts.cairoRegular,
+    letterSpacing: 1,
     marginBottom: 4,
   },
-  headerSubtitle: {
-    fontSize: 14,
-    fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+  heroProphetSymbol: {
+    fontSize: 28,
+    color: theme.Tcolors.gold,
+    marginBottom: 4,
   },
-  verseCard: {
-    marginHorizontal: theme.Spacing.md,
-    marginTop: theme.Spacing.md,
-    marginBottom: theme.Spacing.sm,
-    padding: theme.Spacing.md,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    borderRightWidth: 4,
-    borderRightColor: "#6b5a1f",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+  heroDivider: {
+    width: 48,
+    height: 1,
+    backgroundColor: theme.Tcolors.borderBright,
+    marginVertical: 14,
+    borderRadius: 1,
   },
-  verseIntro: {
-    fontSize: 16,
-    fontFamily: theme.Fonts.amiriBold,
-    color: "#6b5a1f",
-    textAlign: "right",
-  },
-  verseArabic: {
+  heroText: {
     fontSize: 18,
+    color: theme.Tcolors.white,
     fontFamily: theme.Fonts.amiriBold,
-    color: "#333",
     textAlign: "center",
-    lineHeight: 32,
-  },
-  verseReference: {
-    marginTop: 8,
-    fontSize: 13,
-    fontFamily: theme.Fonts.amiriRegular,
-    color: "#777",
-    textAlign: "center",
-  },
-  listContent: {
-    padding: theme.Spacing.md,
-  },
-  row: {
-    justifyContent: "space-between",
-    marginBottom: theme.Spacing.md,
-  },
-  bookWrapper: {
-    width: CARD_WIDTH,
-    height: 240,
-    flexDirection: "row",
-    marginBottom: theme.Spacing.sm,
-  },
-  bookSpine: {
-    width: 24,
-    height: "100%",
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  spineText: {
-    color: "#fff",
-    fontSize: 10,
-    fontFamily: theme.Fonts.amiriBold,
-    transform: [{ rotate: "90deg" }],
-    width: 200,
-    textAlign: "center",
-  },
-  bookCover: {
-    flex: 1,
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
-    padding: theme.Spacing.sm,
-    justifyContent: "space-between",
-  },
-  bookContent: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  titleContainer: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  bookTitle: {
-    fontSize: 20,
-    fontFamily: theme.Fonts.amiriBold,
-    color: "#fff",
-    textAlign: "center",
-    lineHeight: 28,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    transform: [{ rotate: "-45deg" }],
-  },
-  authorContainer: {
-    marginTop: theme.Spacing.xs,
-    paddingTop: theme.Spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.3)",
-  },
-  bookAuthor: {
-    fontSize: 11,
-    fontFamily: theme.Fonts.amiriRegular,
-    color: "rgba(255, 255, 255, 0.9)",
-    textAlign: "center",
-    lineHeight: 16,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: theme.Spacing.sm,
-  },
-  statBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
+    lineHeight: 30,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
   },
-  statText: {
+  heroRefRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 4,
+  },
+  heroRefLine: {
+    flex: 1,
+    height: 0.5,
+    backgroundColor: theme.Tcolors.borderBright,
+    maxWidth: 40,
+  },
+  heroRef: {
     fontSize: 11,
+    color: theme.Tcolors.gold,
+    fontFamily: theme.Fonts.cairoRegular,
+  },
+
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 15,
+    marginVertical: 15,
+  },
+  sectionLine: { flex: 1, height: 0.5, backgroundColor: theme.Tcolors.border },
+  sectionTitle: {
+    fontSize: 13,
+    color: theme.Tcolors.gold,
+    fontFamily: theme.Fonts.cairoBold,
+    letterSpacing: 2,
+  },
+
+  // Book grid
+  gridContent: { paddingHorizontal: 16, paddingBottom: 8 },
+  gridRow: { justifyContent: "space-between", marginBottom: 12 },
+
+  bookCard: {
+    width: (width - 48) / 2,
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: theme.Tcolors.border,
+  },
+  bookGradient: {
+    padding: 16,
+    minHeight: 200,
+    justifyContent: "space-between",
+  },
+
+  cornerOrnTL: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    fontSize: 8,
+    color: "rgba(212,175,90,0.2)",
+  },
+  cornerOrnBR: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    fontSize: 8,
+    color: "rgba(212,175,90,0.2)",
+  },
+  bookTopLine: {
+    height: 0.5,
+    backgroundColor: theme.Tcolors.borderBright,
+    marginBottom: 12,
+  },
+  bookBottomLine: {
+    height: 0.5,
+    backgroundColor: theme.Tcolors.borderBright,
+    marginTop: 10,
+  },
+
+  bookInner: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  bookIndexNum: {
+    fontSize: 11,
+    color: theme.Tcolors.goldDim,
+    fontFamily: theme.Fonts.cairoRegular,
+    letterSpacing: 1,
+  },
+  bookTitleCard: {
+    fontSize: 17,
+    color: theme.Tcolors.white,
     fontFamily: theme.Fonts.amiriBold,
-    color: "#fff",
+    textAlign: "center",
+    lineHeight: 26,
+  },
+  bookAuthorCard: {
+    fontSize: 11,
+    color: theme.Tcolors.textSub,
+    fontFamily: theme.Fonts.amiriRegular,
+    textAlign: "center",
+  },
+
+  bookStats: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 0,
+    marginTop: 4,
+  },
+  statChip: { alignItems: "center", flex: 1 },
+  statVal: {
+    fontSize: 15,
+    color: theme.Tcolors.gold,
+    fontFamily: theme.Fonts.cairoBold,
+  },
+  statKey: {
+    fontSize: 10,
+    color: theme.Tcolors.textSub,
+    fontFamily: theme.Fonts.cairoRegular,
+    marginTop: 1,
+  },
+  statDivider: {
+    width: 0.5,
+    height: 24,
+    backgroundColor: theme.Tcolors.border,
   },
 });
-
-export default HadithHome;

@@ -1,21 +1,22 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams } from "expo-router";
 import React, {
-  useState,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
-  useEffect,
+  useState,
 } from "react";
-import { View, StyleSheet, Alert, Modal } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert, Modal, StyleSheet, View } from "react-native";
 import quranData from "../../assets/quran/quran copy.json";
-import theme from "../constants/root";
 import { useQuranPages } from "../../hooks/useQuranPages";
+import Elfehrest from "../components/Elfehrest";
+import QuranMenu from "../components/QuranMenu";
+import QuranSearch from "../components/search";
+import theme from "../constants/root";
+import QuranControls from "./QuranControls";
 import QuranHeader from "./QuranHeader";
 import QuranPager from "./QuranPager";
-import QuranControls from "./QuranControls";
-import QuranMenu from "../components/QuranMenu";
-import { useLocalSearchParams } from "expo-router";
-import Elfehrest from "../components/Elfehrest";
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -29,6 +30,7 @@ const Quran = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageMarked, setPageMarked] = useState(null);
   const [openMenu, setOpenMenu] = useState(false);
+  const [openSearchModal, setOpenSearchModal] = useState(false);
   const [openIndexModal, setOpenIndexModal] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -187,6 +189,7 @@ const Quran = () => {
           totalPages={pageBasedData.length}
           bookmarked={bookMark}
           onMenuPress={handleMenuPress}
+          onSearchPress={() => setOpenSearchModal(true)}
         />
 
         <QuranMenu
@@ -208,20 +211,25 @@ const Quran = () => {
           currentPage={currentPage}
         />
 
-        <QuranPager
-          ref={flatListRef}
-          data={pageBasedData}
-          onPageChange={setCurrentPage}
-          versesVisible={versesVisible}
-          isDark={isDark}
-        />
+        <View
+          style={{ flex: 1, opacity: openSearchModal ? 0 : 1 }}
+          pointerEvents={openSearchModal ? "none" : "auto"}
+        >
+          <QuranPager
+            ref={flatListRef}
+            data={pageBasedData}
+            onPageChange={setCurrentPage}
+            versesVisible={versesVisible}
+            isDark={isDark}
+          />
 
-        <QuranControls
-          isRecording={isRecording}
-          onRecord={handleStartRecording}
-          versesVisible={versesVisible}
-          onToggleVerses={handleToggleVerses}
-        />
+          <QuranControls
+            isRecording={isRecording}
+            onRecord={handleStartRecording}
+            versesVisible={versesVisible}
+            onToggleVerses={handleToggleVerses}
+          />
+        </View>
 
         <Modal
           visible={openIndexModal}
@@ -244,6 +252,28 @@ const Quran = () => {
             }}
           />
         </Modal>
+        <Modal
+          visible={openSearchModal}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setOpenSearchModal(false)}
+        >
+          <QuranSearch
+            data={pageBasedData}
+            onClose={() => setOpenSearchModal(false)}
+            onSelect={(pageIndex) => {
+              setCurrentPage(pageIndex);
+              setOpenSearchModal(false);
+
+              setTimeout(() => {
+                flatListRef.current?.scrollToIndex({
+                  index: pageIndex,
+                  animated: true,
+                });
+              }, 100);
+            }}
+          />
+        </Modal>
       </View>
     </>
   );
@@ -252,7 +282,7 @@ const Quran = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.Colors.white,
+    backgroundColor: theme.Tcolors.quranbackground,
     overflow: "visible",
   },
 });

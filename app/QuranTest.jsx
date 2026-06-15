@@ -256,7 +256,7 @@ const Quran = () => {
 //       <StatusBar
 //         style="light"
 //         translucent={false}
-//         backgroundColor={theme.Colors.black}
+//         backgroundColor={theme.Tcolors.black}
 //       />
 //       <View style={styles.container}>
 //         <View style={styles.header}>
@@ -281,7 +281,7 @@ const Quran = () => {
 //             <Ionicons
 //               name={bookMark ? "menu" : "menu-outline"}
 //               size={26}
-//               color={theme.Colors.primaryLight}
+//               color={theme.Tcolors.primaryLight}
 //             />
 //           </TouchableOpacity>
 
@@ -325,7 +325,7 @@ const Quran = () => {
 //                 <Ionicons
 //                   name={versesVisible ? "eye" : "eye-off"}
 //                   size={25}
-//                   color={theme.Colors.textGray}
+//                   color={theme.Tcolors.textGray}
 //                 />
 //               </TouchableOpacity>
 //             </View>
@@ -364,7 +364,7 @@ const Quran = () => {
 //                 <Ionicons
 //                   name={isRecording ? "stop-circle" : "mic-circle"}
 //                   size={75}
-//                   color={isRecording ? "#d32f2f" : theme.Colors.primaryLight}
+//                   color={isRecording ? "#d32f2f" : theme.Tcolors.primaryLight}
 //                 />
 //               </View>
 //             </Animated.View>
@@ -378,11 +378,11 @@ const Quran = () => {
 // const styles = StyleSheet.create({
 //   container: {
 //     flex: 1,
-//     backgroundColor: theme.Colors.white,
+//     backgroundColor: theme.Tcolors.white,
 //     overflow: "visible",
 //   },
 //   header: {
-//     backgroundColor: theme.Colors.black,
+//     backgroundColor: theme.Tcolors.black,
 //     paddingVertical: theme.Spacing.sm,
 //     paddingHorizontal: theme.Spacing.md,
 //     flexDirection: "row",
@@ -400,7 +400,7 @@ const Quran = () => {
 //     paddingHorizontal: theme.Spacing.sm,
 //     paddingVertical: theme.Spacing.xs,
 //     borderWidth: 1,
-//     borderColor: theme.Colors.textGray,
+//     borderColor: theme.Tcolors.textGray,
 //     borderRadius: 8,
 //     gap: theme.Spacing.xs,
 //   },
@@ -414,14 +414,14 @@ const Quran = () => {
 //     fontSize: 22,
 //     fontWeight: "bold",
 //     fontFamily: theme.Fonts.amiriBold,
-//     color: theme.Colors.primaryLight,
+//     color: theme.Tcolors.primaryLight,
 //     textAlign: "center",
 //   },
 //   juzNumber: {
 //     fontSize: 12,
 //     fontFamily: theme.Fonts.amiriRegular,
-//     color: theme.Colors.primaryDark,
-//     backgroundColor: theme.Colors.primaryLight,
+//     color: theme.Tcolors.primaryDark,
+//     backgroundColor: theme.Tcolors.primaryLight,
 //     paddingHorizontal: 10,
 //     paddingVertical: 3,
 //     borderRadius: 10,
@@ -429,8 +429,8 @@ const Quran = () => {
 //   pageCounter: {
 //     fontSize: 12,
 //     fontFamily: theme.Fonts.amiriRegular,
-//     color: theme.Colors.primaryDark,
-//     backgroundColor: theme.Colors.primaryLight,
+//     color: theme.Tcolors.primaryDark,
+//     backgroundColor: theme.Tcolors.primaryLight,
 //     paddingHorizontal: 10,
 //     paddingVertical: 3,
 //     borderRadius: 10,
@@ -462,21 +462,21 @@ const Quran = () => {
 //   verseText: {
 //     fontSize: 24,
 //     fontFamily: theme.Fonts.cairoBold,
-//     color: theme.Colors.black,
+//     color: theme.Tcolors.black,
 //     letterSpacing: 0,
 //     textAlign: "center",
 //     direction: "rtl",
 //   },
 //   hiddenVerseText: {
-//     color: theme.Colors.transparent,
+//     color: theme.Tcolors.transparent,
 //   },
 //   verseNumber: {
-//     color: theme.Colors.primaryLight,
+//     color: theme.Tcolors.primaryLight,
 //     fontFamily: theme.Fonts.amiriBold,
 //     fontSize: 16,
 //   },
 //   bottomControls: {
-//     backgroundColor: theme.Colors.black,
+//     backgroundColor: theme.Tcolors.black,
 //     paddingHorizontal: theme.Spacing.md,
 //     paddingVertical: theme.Spacing.sm,
 //     position: "relative",
@@ -496,9 +496,9 @@ const Quran = () => {
 //     padding: 2,
 //     fontSize: 16,
 //     fontFamily: theme.Fonts.amiriRegular,
-//     color: theme.Colors.textGray,
+//     color: theme.Tcolors.textGray,
 //     textDecorationStyle: "solid",
-//     textDecorationColor: theme.Colors.recordingRed,
+//     textDecorationColor: theme.Tcolors.recordingRed,
 //     textDecorationLine: "underline",
 //   },
 //   micPlaceholder: {
@@ -523,7 +523,7 @@ const Quran = () => {
 //     height: 50,
 //     backgroundColor: "#00ffb3",
 //     borderRadius: 60,
-//     shadowColor: theme.Colors.primaryLight,
+//     shadowColor: theme.Tcolors.primaryLight,
 //     shadowOffset: {
 //       width: 0,
 //       height: 0,
@@ -534,7 +534,7 @@ const Quran = () => {
 //     zIndex: -1,
 //   },
 //   micGlow: {
-//     shadowColor: theme.Colors.primaryLight,
+//     shadowColor: theme.Tcolors.primaryLight,
 //     shadowOffset: {
 //       width: 0,
 //       height: 0,

@@ -80,7 +80,7 @@ const QuranControls = React.memo(
               <Ionicons
                 name={versesVisible ? "eye" : "eye-off"}
                 size={25}
-                color={theme.Colors.textGray}
+                color={theme.Tcolors.textGray}
               />
             </TouchableOpacity>
           </View>
@@ -117,7 +117,7 @@ const QuranControls = React.memo(
               <Ionicons
                 name={isRecording ? "stop-circle" : "mic-circle"}
                 size={75}
-                color={isRecording ? "#d32f2f" : theme.Colors.primaryLight}
+                color={isRecording ? "#d32f2f" : theme.Tcolors.primaryLight}
               />
             </View>
           </Animated.View>
@@ -131,7 +131,7 @@ QuranControls.displayName = "QuranControls";
 
 const styles = StyleSheet.create({
   bottomControls: {
-    backgroundColor: theme.Colors.black,
+    backgroundColor: theme.Tcolors.black,
     paddingHorizontal: theme.Spacing.md,
     paddingVertical: theme.Spacing.sm,
     position: "relative",
@@ -151,9 +151,9 @@ const styles = StyleSheet.create({
     padding: 2,
     fontSize: 16,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
     textDecorationStyle: "solid",
-    textDecorationColor: theme.Colors.recordingRed,
+    textDecorationColor: theme.Tcolors.recordingRed,
     textDecorationLine: "underline",
   },
   micPlaceholder: {
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     height: 50,
     backgroundColor: "#00ffb3",
     borderRadius: 60,
-    shadowColor: theme.Colors.primaryLight,
+    shadowColor: theme.Tcolors.primaryLight,
     shadowOffset: {
       width: 0,
       height: 0,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
   micGlow: {
-    shadowColor: theme.Colors.primaryLight,
+    shadowColor: theme.Tcolors.primaryLight,
     shadowOffset: {
       width: 0,
       height: 0,

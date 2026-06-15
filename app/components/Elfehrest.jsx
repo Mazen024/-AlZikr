@@ -1,33 +1,49 @@
-import React, { useState } from "react";
-import {
-  FlatList,
-  Text,
-  View,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Animated,
-  TextInput,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import theme from "../constants/root";
-import quran from "../../assets/quran/quran copy.json";
-import kaaba from "../../assets/images/makkah-kaaba.png";
+import { useState } from "react";
+import {
+  Animated,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import madinah from "../../assets/images/madinah.png";
-import { useRouter } from "expo-router";
+import kaaba from "../../assets/images/makkah-kaaba.png";
+import quran from "../../assets/quran/quran copy.json";
+import theme from "../constants/root";
+
+const removeTashkeel = (text) =>
+  text
+    ?.replace(
+      /[\u064B-\u065F\u0670\u0610-\u061A\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g,
+      "",
+    ) // إزالة التشكيل
+    .replace(/ـ/g, "") // إزالة التطويل
+    .replace(/[أإآٱ]/g, "ا") // توحيد الألف
+    .replace(/ى/g, "ي") // توحيد الألف المقصورة
+    .replace(/\s+/g, " ")
+    .trim() ?? "";
+
 
 export default function Elfehrest({ onClose, onSelect }) {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const surahs = quran.data.surahs;
 
   const filteredSurahs = surahs.filter((surah) => {
-    const matchesSearch = surah.name.includes(searchQuery);
+    const normalizedQuery = removeTashkeel(searchQuery);
+    const normalizedName = removeTashkeel(surah.name);
+
+    const matchesSearch = normalizedName.includes(normalizedQuery);
+
     const matchesType =
       filterType === "all" ||
       (filterType === "meccan" && surah.revelationType === "Meccan") ||
       (filterType === "medinan" && surah.revelationType === "Medinan");
+
     return matchesSearch && matchesType;
   });
 
@@ -108,7 +124,7 @@ export default function Elfehrest({ onClose, onSelect }) {
                 <Ionicons
                   name="book-outline"
                   size={14}
-                  color={theme.Colors.textGray}
+                  color={theme.Tcolors.textGray}
                 />
                 <Text style={styles.ayahsCount}>{item.ayahs.length} آية</Text>
               </View>
@@ -127,14 +143,11 @@ export default function Elfehrest({ onClose, onSelect }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => onClose()} style={styles.backButton}>
             <Ionicons
               name="arrow-forward"
               size={24}
-              color={theme.Colors.primaryLight}
+              color={theme.Tcolors.primaryLight}
             />
           </TouchableOpacity>
           <Text style={styles.title}>فهرس القرآن الكريم</Text>
@@ -146,13 +159,13 @@ export default function Elfehrest({ onClose, onSelect }) {
           <Ionicons
             name="search"
             size={20}
-            color={theme.Colors.textGray}
+            color={theme.Tcolors.textGray}
             style={styles.searchIcon}
           />
           <TextInput
             style={styles.searchInput}
             placeholder="ابحث عن سورة..."
-            placeholderTextColor={theme.Colors.textGray}
+            placeholderTextColor={theme.Tcolors.textGray}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -161,7 +174,7 @@ export default function Elfehrest({ onClose, onSelect }) {
               <Ionicons
                 name="close-circle"
                 size={20}
-                color={theme.Colors.textGray}
+                color={theme.Tcolors.textGray}
               />
             </TouchableOpacity>
           )}
@@ -241,7 +254,7 @@ export default function Elfehrest({ onClose, onSelect }) {
             <Ionicons
               name="search-outline"
               size={64}
-              color={theme.Colors.textGray}
+              color={theme.Tcolors.textGray}
             />
             <Text style={styles.emptyText}>لا توجد نتائج</Text>
           </View>
@@ -254,11 +267,11 @@ export default function Elfehrest({ onClose, onSelect }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.Colors.white,
+    backgroundColor: theme.Tcolors.white,
     direction: "rtl",
   },
   header: {
-    backgroundColor: theme.Colors.black,
+    backgroundColor: theme.Tcolors.primaryBackground,
     paddingVertical: theme.Spacing.md,
     paddingHorizontal: theme.Spacing.md,
     borderBottomLeftRadius: 24,
@@ -287,7 +300,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: theme.Fonts.amiriBold,
-    color: theme.Colors.primaryLight,
+    color: theme.Tcolors.primaryLight,
   },
   searchContainer: {
     flexDirection: "row",
@@ -305,7 +318,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.white,
+    color: theme.Tcolors.white,
     textAlign: "right",
     paddingHorizontal: theme.Spacing.sm,
   },
@@ -323,7 +336,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   filterButtonActive: {
-    backgroundColor: theme.Colors.primaryLight,
+    backgroundColor: theme.Tcolors.primaryLight,
   },
   filterButtonActiveMeccan: {
     backgroundColor: "#2e7d32",
@@ -334,16 +347,16 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 13,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
   },
   filterTextActive: {
-    color: theme.Colors.white,
+    color: theme.Tcolors.white,
     fontFamily: theme.Fonts.amiriBold,
   },
   resultsCount: {
     fontSize: 12,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
     textAlign: "center",
     marginTop: theme.Spacing.xs,
   },
@@ -356,7 +369,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: theme.Spacing.md,
     paddingHorizontal: theme.Spacing.sm,
-    backgroundColor: theme.Colors.white,
+    backgroundColor: theme.Tcolors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#f0f0f0",
@@ -377,12 +390,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRightWidth: 1,
-    borderColor: theme.Colors.textGray,
+    borderColor: theme.Tcolors.textGray,
   },
   surahNumber: {
     fontSize: 22,
     fontFamily: theme.Fonts.amiriBold,
-    color: theme.Colors.black,
+    color: theme.Tcolors.black,
   },
   centerSection: {
     flex: 1,
@@ -391,7 +404,7 @@ const styles = StyleSheet.create({
   surahName: {
     fontSize: 20,
     fontFamily: theme.Fonts.amiriBold,
-    color: theme.Colors.black,
+    color: theme.Tcolors.black,
     marginBottom: theme.Spacing.xs,
   },
   infoRow: {
@@ -426,7 +439,7 @@ const styles = StyleSheet.create({
   ayahsCount: {
     fontSize: 12,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
   },
   emptyContainer: {
     alignItems: "center",
@@ -436,7 +449,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
     marginTop: theme.Spacing.md,
   },
 });

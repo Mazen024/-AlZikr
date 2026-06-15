@@ -57,7 +57,7 @@ export default function QuranMenu({
             <Ionicons
               name="bookmark"
               size={20}
-              color={theme.Colors.primaryLight}
+              color={theme.Tcolors.primaryLight}
             />
             <Text style={styles.text}>
               {bookmark === currentPage
@@ -73,7 +73,7 @@ export default function QuranMenu({
             <Ionicons
               name="bookmark-outline"
               size={20}
-              color={theme.Colors.primaryLight}
+              color={theme.Tcolors.primaryLight}
             />
             <Text style={styles.text}>اذهب إلى العلامة</Text>
           </TouchableOpacity>
@@ -85,7 +85,7 @@ export default function QuranMenu({
             <Ionicons
               name="book-outline"
               size={20}
-              color={theme.Colors.primaryLight}
+              color={theme.Tcolors.primaryLight}
             />
             <Text style={styles.text}>الفهرس</Text>
           </TouchableOpacity>
@@ -97,7 +97,7 @@ export default function QuranMenu({
             <Ionicons
               name={isDark ? "sunny-outline" : "moon-outline"}
               size={20}
-              color={theme.Colors.primaryLight}
+              color={theme.Tcolors.primaryLight}
             />
             <Text style={styles.text}>
               {isDark ? "الوضع النهاري" : "الوضع الليلي"}
@@ -108,7 +108,7 @@ export default function QuranMenu({
             <Ionicons
               name="settings-outline"
               size={20}
-              color={theme.Colors.primaryLight}
+              color={theme.Tcolors.primaryLight}
             />
             <Text style={styles.text}>الإعدادات</Text>
           </TouchableOpacity>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   menu: {
-    backgroundColor: theme.Colors.white,
+    backgroundColor: theme.Tcolors.white,
     paddingVertical: 20,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -153,6 +153,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.black,
+    color: theme.Tcolors.black,
   },
 });

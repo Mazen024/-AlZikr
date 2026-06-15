@@ -4,6 +4,9 @@ import theme from "../constants/root";
 
 const { width } = Dimensions.get("window");
 
+const toArabicDigits = (num) =>
+  num.toString().replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+
 const QuranPage = React.memo(({ page, versesVisible, isDark }) => {
   // Group consecutive ayahs from the same surah
   const groupedAyahs = useMemo(() => {
@@ -61,7 +64,7 @@ const QuranPage = React.memo(({ page, versesVisible, isDark }) => {
                   style={versesVisible ? {} : styles.hiddenVerseText}
                 >
                   {ayah.text}
-                  <Text style={styles.verseNumber}>﴿{ayah.numberInSurah}﴾</Text>
+                  <Text style={styles.verseNumber}>۝{toArabicDigits(ayah.numberInSurah)}</Text>
                   {index < group.ayahs.length - 1 ? " " : ""}
                 </Text>
               ))}
@@ -81,10 +84,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: theme.Spacing.xs,
     paddingVertical: theme.Spacing.sm,
-    backgroundColor: theme.Colors.quranbackground,
+    backgroundColor: theme.Tcolors.quranbackground,
   },
   darkPage: {
-    backgroundColor: theme.Colors.black,
+    backgroundColor: theme.Tcolors.black,
   },
   bismillahContainer: {
     alignItems: "center",
@@ -124,20 +127,20 @@ const styles = StyleSheet.create({
   verseText: {
     fontSize: 20,
     // fontFamily: theme.Fonts.quranText,
-    color: theme.Colors.black,
+    color: theme.Tcolors.black,
     letterSpacing: 0.3,
     textAlign: "center",
     lineHeight: 35,
     direction: "rtl",
   },
   darkVerseText: {
-    color: theme.Colors.white,
+    color: theme.Tcolors.white,
   },
   hiddenVerseText: {
-    color: theme.Colors.transparent,
+    color: theme.Tcolors.transparent,
   },
   verseNumber: {
-    color: theme.Colors.primaryLight,
+    color: theme.Tcolors.primaryLight,
     fontFamily: theme.Fonts.amiriBold,
     fontSize: 22,
   },

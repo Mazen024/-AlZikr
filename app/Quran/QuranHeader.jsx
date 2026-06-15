@@ -1,12 +1,19 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import theme from "../constants/root";
 
 const QuranHeader = React.memo(
-  ({ currentPage, pageData, totalPages, bookmarked, onMenuPress }) => {
+  ({ currentPage, pageData, totalPages, bookmarked, onMenuPress, onSearchPress  }) => {
     return (
       <View style={styles.header}>
+        <TouchableOpacity onPress={onSearchPress} activeOpacity={0.7}>
+          <Ionicons
+            name={"search"}
+            size={30}
+            color={theme.Tcolors.primaryLight}
+          />
+        </TouchableOpacity>
         <View style={styles.headerRight}>
           <Text style={styles.juzNumber}>الجزء {pageData?.juz || 1}</Text>
           <View style={styles.headerCenter}>
@@ -20,11 +27,7 @@ const QuranHeader = React.memo(
         </View>
 
         <TouchableOpacity onPress={onMenuPress} activeOpacity={0.7}>
-          <Ionicons
-            name={bookmarked ? "menu" : "menu-outline"}
-            size={30}
-            color={theme.Colors.primaryLight}
-          />
+          <Ionicons name={"menu"} size={30} color={theme.Tcolors.primaryLight} />
         </TouchableOpacity>
 
         {bookmarked && (
@@ -41,13 +44,13 @@ QuranHeader.displayName = "QuranHeader";
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: theme.Colors.black,
+    backgroundColor: theme.Tcolors.black,
     paddingVertical: theme.Spacing.sm,
     paddingHorizontal: theme.Spacing.md,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: theme.Spacing.sm,
+    gap: theme.Spacing.xs,
     position: "relative",
     overflow: "visible",
   },
@@ -56,12 +59,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     flex: 1,
-    paddingHorizontal: theme.Spacing.sm,
+    paddingHorizontal: theme.Spacing.xs,
     paddingVertical: theme.Spacing.xs,
     borderWidth: 1,
-    borderColor: theme.Colors.textGray,
+    borderColor: theme.Tcolors.textGray,
     borderRadius: 8,
-    gap: theme.Spacing.xs,
   },
   headerCenter: {
     flexDirection: "row",
@@ -73,14 +75,14 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     fontFamily: theme.Fonts.amiriBold,
-    color: theme.Colors.primaryLight,
+    color: theme.Tcolors.primaryLight,
     textAlign: "center",
   },
   juzNumber: {
     fontSize: 12,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.primaryDark,
-    backgroundColor: theme.Colors.primaryLight,
+    color: theme.Tcolors.primaryDark,
+    backgroundColor: theme.Tcolors.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 10,
@@ -88,8 +90,8 @@ const styles = StyleSheet.create({
   pageCounter: {
     fontSize: 12,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.primaryDark,
-    backgroundColor: theme.Colors.primaryLight,
+    color: theme.Tcolors.primaryDark,
+    backgroundColor: theme.Tcolors.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 10,

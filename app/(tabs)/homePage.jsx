@@ -1,59 +1,120 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import React, { useEffect, useState } from "react";
-import root from "../constants/root.jsx";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-const { Colors, Fonts, FontSizes, Spacing, BorderRadius } = root;
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import root from "../constants/root.jsx";
 
-const getHijriDate = () => {
-  const today = new Date();
+const { Fonts, FontSizes, Spacing, BorderRadius, Tcolors } = root;
 
-  const formatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
+const getHijriDate = () =>
+  new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
-  });
+  }).format(new Date());
 
-  return formatter.format(today);
-};
+const getGreeting = () =>
+  new Date().getHours() < 12 ? "صبحك الله بالخير" : "مساك الله بالخير";
 
-const eltahiat = () => {
-  if (new Date().getHours() < 12) {
-    return "صبحك الله بالخير";
-  }
-  return "مساك الله بالخير";
-};
+function FeatureCard({ emoji, title, subtitle, onPress, index }) {
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 340,
+        delay: 300 + index * 70,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slide, {
+        toValue: 0,
+        duration: 340,
+        delay: 300 + index * 70,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fade, index, slide]);
+
+  return (
+    <Animated.View
+      style={{ opacity: fade, transform: [{ translateY: slide }] }}
+    >
+      <TouchableOpacity
+        style={styles.featureCard}
+        onPress={onPress}
+        activeOpacity={0.75}
+      >
+        <View style={styles.featureIcon}>
+          <Text style={styles.featureEmoji}>{emoji}</Text>
+        </View>
+        <View style={styles.featureText}>
+          <Text style={styles.featureTitle}>{title}</Text>
+          <Text style={styles.featureSubtitle}>{subtitle}</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 const HomePage = () => {
   const router = useRouter();
   const [hijriDate, setHijriDate] = useState(getHijriDate());
-  const [greeting, setGreeting] = useState(eltahiat());
+  const [greeting, setGreeting] = useState(getGreeting());
+  const heroAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const update = () => {
-      setGreeting(eltahiat());
+      setGreeting(getGreeting());
       setHijriDate(getHijriDate());
     };
-
     update();
+    const iv = setInterval(update, 60_000);
+    Animated.timing(heroAnim, {
+      toValue: 1,
+      duration: 700,
+      useNativeDriver: true,
+    }).start();
+    return () => clearInterval(iv);
+  }, [heroAnim]);
 
-    const interval = setInterval(update, 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const FEATURES = [
+    {
+      emoji: "🎙️",
+      title: "تسميع القرآن الكريم",
+      subtitle: "ابدأ التسجيل الآن",
+      route: "/Quran/Quran",
+    },
+    {
+      emoji: "📖",
+      title: "جامع كتب الأحاديث",
+      subtitle: "تصفح الأحاديث",
+      route: "/Hadith/HadithHome",
+    },
+    {
+      emoji: "⏰",
+      title: "توقيت الصلاة",
+      subtitle: "اعرف أوقات الصلاة",
+      route: "/ForPray/prayTimes",
+    },
+  ];
 
   return (
-    <View style={styles.container}>
+    <View style={styles.root}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Text style={styles.icon}>🔔</Text>
+        <TouchableOpacity style={styles.bellBtn}>
+          <Text style={styles.bellIcon}>🔔</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Image
@@ -67,173 +128,213 @@ const HomePage = () => {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.verseCard}>
-          <Text style={styles.verseArabic}>
-            ﴿ وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُدَّكِرٍ﴾
-          </Text>
-          <Text style={styles.verseReference}>سورة القمر - الآية ١٧</Text>
-        </View>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <LinearGradient
+          colors={[Tcolors.heroGradientStart, Tcolors.heroGradientEnd]}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={styles.hero}
+        >
+          <Animated.View style={{ opacity: heroAnim }}>
+            <View style={styles.verseInner}>
+              <Text style={styles.verseArabic}>
+                ﴿ وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُدَّكِرٍ
+                ﴾
+              </Text>
+              <View style={styles.verseDivider} />
+              <Text style={styles.verseReference}>سورة القمر — الآية ١٧</Text>
+            </View>
+          </Animated.View>
+        </LinearGradient>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>ميزات سريعة</Text>
 
-          <TouchableOpacity
-            style={styles.featureCard}
-            onPress={() => router.push("/Quran/Quran")}
-            activeOpacity={0.8}
-          >
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureEmoji}>🎙️</Text>
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>تسميع القرآن الكريم</Text>
-              <Text style={styles.featureSubtitle}>ابدأ التسجيل الآن</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.featureCard}
-            onPress={() => router.push("/Hadith/HadithHome")}
-            activeOpacity={0.8}
-          >
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureEmoji}>📖</Text>
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle} > جامع كتب الأحاديث </Text>
-              <Text style={styles.featureSubtitle}>تصفح الأحاديث</Text>
-            </View>
-          </TouchableOpacity>
+          {FEATURES.map((f, i) => (
+            <FeatureCard
+              key={f.route}
+              emoji={f.emoji}
+              title={f.title}
+              subtitle={f.subtitle}
+              onPress={() => router.push(f.route)}
+              index={i}
+            />
+          ))}
         </View>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
     </View>
   );
 };
 
+// ── Styles ─────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    backgroundColor: Tcolors.primaryBackground,
   },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.mediumGray,
+    paddingVertical: Spacing.mdd,
+    backgroundColor: Tcolors.secondaryBackground,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Tcolors.cardBorder,
   },
+
   headerCenter: {
     flexDirection: "row-reverse",
     alignItems: "center",
+    gap: 10,
   },
+
   headerTextContainer: {
     alignItems: "flex-end",
   },
+
   headerLogo: {
     width: Spacing.xxl,
     height: Spacing.xxl,
+    borderRadius: BorderRadius.circular,
     resizeMode: "contain",
   },
+
   headerTitle: {
     fontSize: FontSizes.h3,
     fontWeight: "bold",
-    color: Colors.primaryDark,
+    color: Tcolors.white,
     fontFamily: Fonts.amiriBold,
   },
+
   headerSubTitle: {
     fontSize: FontSizes.small,
-    color: Colors.textGray,
+    color: Tcolors.secondaryText,
     fontFamily: Fonts.cairoRegular,
   },
-  iconButton: {
+
+  bellBtn: {
     width: Spacing.xl,
     height: Spacing.xl,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: Tcolors.pillBackground,
+    borderRadius: BorderRadius.md,
+    borderWidth: 0.5,
+    borderColor: Tcolors.pillBorder,
   },
-  icon: {
-    fontSize: FontSizes.h3,
+
+  bellIcon: {
+    fontSize: FontSizes.body,
   },
-  content: {
-    flex: 1,
-    paddingTop: Spacing.md,
+
+  scroll: { flex: 1 },
+
+  hero: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    overflow: "hidden",
   },
-  verseCard: {
-    backgroundColor: Colors.primaryDark,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+
+  verseInner: {
     alignItems: "center",
   },
+
   verseArabic: {
     fontSize: FontSizes.quranText,
-    color: Colors.white,
+    color: Tcolors.white,
     textAlign: "center",
-    marginBottom: Spacing.sm,
     fontFamily: Fonts.amiriRegular,
-    lineHeight: Spacing.xl,
+    lineHeight: Spacing.xl + 8,
+    marginBottom: Spacing.sm,
   },
+
+  verseDivider: {
+    width: 40,
+    height: 1,
+    backgroundColor: Tcolors.primaryLight,
+    borderRadius: 1,
+    marginVertical: Spacing.sm,
+    opacity: 0.6,
+  },
+
   verseReference: {
     fontSize: FontSizes.small,
-    color: "rgba(255, 255, 255, 0.8)",
+    color: Tcolors.primaryLight,
     fontFamily: Fonts.cairoRegular,
   },
+
   section: {
-    marginTop: Spacing.mdd,
+    marginTop: Spacing.mdd ?? Spacing.md,
     paddingHorizontal: Spacing.md,
   },
+
   sectionTitle: {
     fontSize: FontSizes.body,
     fontWeight: "700",
-    color: Colors.darkGray,
+    color: Tcolors.tertiaryText,
     marginBottom: Spacing.md,
     fontFamily: Fonts.cairoBold,
     alignSelf: "flex-end",
+    letterSpacing: 0.5,
   },
+
   featureCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Tcolors.cardBackground,
     flexDirection: "row",
     alignItems: "center",
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.sm,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: BorderRadius.md,
-    elevation: 3,
+    borderWidth: 0.5,
+    borderColor: Tcolors.cardBorder,
+    position: "relative",
+    overflow: "hidden",
   },
+
   featureIcon: {
     width: Spacing.xxxl,
     height: Spacing.xxxl,
-    backgroundColor: Colors.mediumGray,
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
     marginRight: Spacing.md,
   },
+
   featureEmoji: {
     fontSize: FontSizes.h2,
   },
+
   featureText: {
     flex: 1,
+    alignItems: "flex-end",
   },
+
   featureTitle: {
     fontSize: FontSizes.body,
     fontWeight: "700",
-    color: Colors.darkGray,
-    marginBottom: 4,
+    color: Tcolors.primaryText,
+    marginBottom: 3,
     fontFamily: Fonts.cairoBold,
+    textAlign: "right",
   },
+
   featureSubtitle: {
     fontSize: FontSizes.small,
-    color: Colors.textGray,
+    color: Tcolors.primaryLight,
     fontFamily: Fonts.cairoRegular,
+    textAlign: "right",
+  },
+
+  chevron: {
+    fontSize: 22,
+    color: Tcolors.tertiaryText,
+    marginLeft: Spacing.sm,
   },
 });
 

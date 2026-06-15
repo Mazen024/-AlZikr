@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  StatusBar,
   StyleSheet,
   View,
 } from "react-native";
@@ -27,8 +26,8 @@ const { height } = Dimensions.get("window");
 const HEADER_HEIGHT = 64;
 const DIVIDER_HEIGHT = 2;
 const CONTENT_HEIGHT = height - HEADER_HEIGHT - DIVIDER_HEIGHT;
-const UPPER_HEIGHT = CONTENT_HEIGHT * 0.5;
-const LOWER_HEIGHT = CONTENT_HEIGHT * 0.5;
+const UPPER_HEIGHT = CONTENT_HEIGHT * 0.6;
+const LOWER_HEIGHT = CONTENT_HEIGHT * 0.4;
 
 const HadithReader = () => {
   const { bookId } = useLocalSearchParams();
@@ -146,15 +145,13 @@ const HadithReader = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={theme.Colors.primaryLight} />
+        <ActivityIndicator size="large" color={theme.Tcolors.primaryLight} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#12122a" />
-
       <HadithHeader
         bookTitle={bookTitle}
         currentChapterTitle={currentChapterTitle}
@@ -191,16 +188,16 @@ export default HadithReader;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.Colors.quranbackground,
+    backgroundColor: theme.Tcolors.quranbackground,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: theme.Colors.quranbackground,
+    backgroundColor: theme.Tcolors.quranbackground,
   },
   divider: {
     height: DIVIDER_HEIGHT,
-    backgroundColor: theme.Colors.primaryLight,
+    backgroundColor: theme.Tcolors.primaryLight,
   },
 });

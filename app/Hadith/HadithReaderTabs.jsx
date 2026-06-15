@@ -1,11 +1,4 @@
-import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import theme from "../constants/root";
 
 const TABS = [
@@ -25,25 +18,28 @@ const TabContent = ({ tabKey }) => (
 
 const HadithTabs = ({ activeTab, onTabChange, height }) => (
   <View style={[styles.container, { height }]}>
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.tabBar}
-      contentContainerStyle={styles.tabBarContent}
-    >
+    <View style={styles.tabBar}>
       {TABS.map((tab) => (
         <TouchableOpacity
           key={tab.key}
-          style={[styles.tabItem, activeTab === tab.key && styles.tabItemActive]}
+          style={[
+            styles.tabItem,
+            activeTab === tab.key && styles.tabItemActive,
+          ]}
           onPress={() => onTabChange(tab.key)}
           activeOpacity={0.75}
         >
-          <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>
+          <Text
+            style={[
+              styles.tabLabel,
+              activeTab === tab.key && styles.tabLabelActive,
+            ]}
+          >
             {tab.label}
           </Text>
         </TouchableOpacity>
       ))}
-    </ScrollView>
+    </View>
 
     <View style={styles.tabContentArea}>
       <TabContent tabKey={activeTab} />
@@ -60,14 +56,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   tabBar: {
+    flexDirection: "row",
     maxHeight: 44,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
     backgroundColor: "#fafafa",
-  },
-  tabBarContent: {
-    paddingHorizontal: theme.Spacing.sm,
-    alignItems: "center",
   },
   tabItem: {
     paddingHorizontal: 18,
@@ -77,16 +70,16 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
   },
   tabItemActive: {
-    borderBottomColor: theme.Colors.primaryLight,
+    borderBottomColor: theme.Tcolors.primaryLight,
   },
   tabLabel: {
     fontSize: 14,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
   },
   tabLabelActive: {
     fontFamily: theme.Fonts.amiriBold,
-    color: theme.Colors.primaryLight,
+    color: theme.Tcolors.primaryLight,
   },
   tabContentArea: {
     flex: 1,
@@ -99,12 +92,12 @@ const styles = StyleSheet.create({
   tabContentText: {
     fontSize: 18,
     fontFamily: theme.Fonts.amiriBold,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
   },
   tabContentSub: {
     fontSize: 13,
     fontFamily: theme.Fonts.amiriRegular,
-    color: theme.Colors.textGray,
+    color: theme.Tcolors.textGray,
     marginTop: 6,
   },
 });
