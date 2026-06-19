@@ -1,11 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Location from "expo-location";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -15,8 +12,13 @@ import {
   View,
 } from "react-native";
 import { usePrayerContext } from "../../context/PrayerContext";
-import QiblaCompass from "./QiblaCompass";
-const { width } = Dimensions.get("window");
+import {
+  formatTo12,
+  getCountdown,
+  getDayProgress,
+} from "../../hooks/usePrayerTimes";
+import StarField from "../constants/homeConstants";
+import root from "../constants/root";
 
 const PRAYER_META = {
   Fajr: { label: "Dawn prayer", icon: "☽", arabic: "الفجر" },
@@ -28,128 +30,6 @@ const PRAYER_META = {
 };
 
 const PRAYERS = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
-
-const ACCENT = "#4eca8b";
-const BG_DARK = "#0c1520";
-const HERO_TOP = "#1a3a5c";
-const HERO_BTM = "#0d2137";
-
-const CACHE_KEY = "prayer_cache";
-const LOCATION_KEY = "prayer_location";
-
-function parseTime(timeStr) {
-  if (!timeStr) return null;
-  const [h, m] = timeStr.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d;
-}
-
-function getNextPrayer(times) {
-  const now = new Date();
-  for (const name of PRAYERS) {
-    const t = parseTime(times?.[name]);
-    if (t && t > now) return { name, time: times[name] };
-  }
-  const tomorrowFajr = parseTime(times?.[PRAYERS[0]]);
-  if (tomorrowFajr) {
-    tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
-    const hh = String(tomorrowFajr.getHours()).padStart(2, "0");
-    const mm = String(tomorrowFajr.getMinutes()).padStart(2, "0");
-    return { name: PRAYERS[0], time: `${hh}:${mm}`, isTomorrow: true };
-  }
-  return { name: PRAYERS[0], time: times?.[PRAYERS[0]] };
-}
-
-function getDayProgress() {
-  const now = new Date();
-  return Math.min((now.getHours() * 60 + now.getMinutes()) / (24 * 60), 1);
-}
-
-function getCountdown(timeStr, isTomorrow = false) {
-  const t = parseTime(timeStr);
-  if (!t) return "";
-  if (isTomorrow) t.setDate(t.getDate() + 1);
-  const diff = t - new Date();
-  if (diff <= 0) return "Now";
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  return h > 0 ? `in ${h}h ${m}m` : `in ${m}m`;
-}
-
-function formatTo12(timeStr) {
-  if (!timeStr) return "";
-  const [h, m] = timeStr.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
-}
-
-async function loadCache() {
-  try {
-    const raw = await AsyncStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const { times, date } = JSON.parse(raw);
-    if (date !== new Date().toDateString()) return null; // expired
-    return times;
-  } catch {
-    return null;
-  }
-}
-
-async function saveCache(times) {
-  try {
-    await AsyncStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({ times, date: new Date().toDateString() }),
-    );
-  } catch {}
-}
-
-async function loadLocation() {
-  try {
-    const raw = await AsyncStorage.getItem(LOCATION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function saveLocation(coords, cityName) {
-  try {
-    await AsyncStorage.setItem(
-      LOCATION_KEY,
-      JSON.stringify({ coords, cityName }),
-    );
-  } catch {}
-}
-
-function StarField() {
-  const stars = Array.from({ length: 30 }, () => ({
-    x: Math.random() * width,
-    y: Math.random() * 160,
-    r: Math.random() * 1.2 + 0.3,
-    opacity: Math.random() * 0.5 + 0.1,
-  }));
-  return (
-    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-      {stars.map((s, i) => (
-        <View
-          key={i}
-          style={{
-            position: "absolute",
-            left: s.x,
-            top: s.y,
-            width: s.r * 2,
-            height: s.r * 2,
-            borderRadius: s.r,
-            backgroundColor: `rgba(255,255,255,${s.opacity})`,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
 
 function PrayerRow({ name, time, isNext, index, isTomorrow }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -183,18 +63,24 @@ function PrayerRow({ name, time, isNext, index, isTomorrow }) {
     >
       {isNext && <View style={styles.activeBar} />}
       <View style={[styles.iconBox, isNext && styles.iconBoxActive]}>
-        <Text style={[styles.iconText, isNext && { color: ACCENT }]}>
+        <Text
+          style={[styles.iconText, isNext && { color: root.Tcolors.ACCENT }]}
+        >
           {meta.icon}
         </Text>
       </View>
       <View style={styles.prayerInfo}>
-        <Text style={[styles.prayerName, isNext && { color: ACCENT }]}>
+        <Text
+          style={[styles.prayerName, isNext && { color: root.Tcolors.ACCENT }]}
+        >
           {name}
         </Text>
         <Text style={styles.prayerSub}>{meta.label}</Text>
       </View>
       <View style={styles.prayerRight}>
-        <Text style={[styles.prayerTime, isNext && { color: ACCENT }]}>
+        <Text
+          style={[styles.prayerTime, isNext && { color: root.Tcolors.ACCENT }]}
+        >
           {formatTo12(time)}
         </Text>
         {isNext && (
@@ -208,137 +94,34 @@ function PrayerRow({ name, time, isNext, index, isTomorrow }) {
 }
 
 export default function PrayTimes() {
-  const [prayerTimes, setPrayerTimes] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [cityName, setCityName] = useState("Loading…");
-  const [coords, setCoords] = useState(null);
+  const {
+    prayerTimes,
+    nextPrayer,
+    cityName,
+    loading,
+    refreshing,
+    error,
+    isStale,
+    refresh,
+    retry,
+  } = usePrayerContext();
+
   const heroAnim = useRef(new Animated.Value(0)).current;
-  const { setPrayerTime } = usePrayerContext();
-  const hasFetched = useRef(false);
 
-  const applyTimes = useCallback(
-    (times) => {
-      setPrayerTimes(times);
-      setPrayerTime(times);
-      Animated.timing(heroAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }).start();
-    },
-    [setPrayerTime, heroAnim],
-  );
-
-  const fetchFromNetwork = useCallback(
-    async (lat, lon, isRefresh = false) => {
-      const today = new Date();
-      const date = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
-      const res = await fetch(
-        `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=5`,
-      );
-      const data = await res.json();
-      if (data.code === 200) {
-        await saveCache(data.data.timings);
-        applyTimes(data.data.timings);
-      } else {
-        setError("Failed to fetch prayer times");
-      }
-    },
-    [applyTimes],
-  );
-
-  const init = useCallback(async (forceRefresh = false) => {
-    try {
-      setError(null);
-
-      // 1️⃣ Try cache first (skip network entirely if today's data exists)
-      if (!refreshing) {
-        const cached = await loadCache();
-        if (cached) {
-          applyTimes(cached);
-          // Still load saved location for city name + Qibla
-          const savedLoc = await loadLocation();
-          if (savedLoc) {
-            setCityName(savedLoc.cityName);
-            setCoords(savedLoc.coords);
-          }
-          setLoading(false);
-          return; // ✅ done — no network call
-        }
-      }
-
-      // 2️⃣ No cache — get location
-      let lat, lon, city;
-      const savedLoc = await loadLocation();
-
-      if (savedLoc && !refreshing) {
-        // Use stored location (no GPS call)
-        ({
-          coords: { latitude: lat, longitude: lon },
-          cityName: city,
-        } = savedLoc);
-        // Spread properly:
-        lat = savedLoc.coords.latitude;
-        lon = savedLoc.coords.longitude;
-        city = savedLoc.cityName;
-      } else {
-        // Fresh GPS
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setError("Location permission denied");
-          setLoading(false);
-          return;
-        }
-        const loc = await Location.getCurrentPositionAsync({});
-        lat = loc.coords.latitude;
-        lon = loc.coords.longitude;
-        console.log("Fetched GPS location:", lat, lon);
-
-        const [place] = await Location.reverseGeocodeAsync({
-          latitude: lat,
-          longitude: lon,
-        });
-        city = place
-          ? `${place.city || place.subregion}, ${place.country}`
-          : "Unknown";
-
-        await saveLocation({ latitude: lat, longitude: lon }, city);
-      }
-
-      setCityName(city);
-      setCoords({ latitude: lat, longitude: lon });
-
-      // 3️⃣ Fetch prayer times from network
-      await fetchFromNetwork(lat, lon);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [refreshing, applyTimes, fetchFromNetwork]);
-
-  // ✅ Run only once on mount — no dependency loop
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    init();
-  }, [init]);
+    if (!prayerTimes) return;
+    Animated.timing(heroAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, [prayerTimes, heroAnim]);
 
-  // Pull-to-refresh
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await init();
-  }, [init]);
-
-  // ── Render ────────────────────────────────────────────────────────────────
   if (loading)
     return (
       <View style={styles.center}>
         <StatusBar barStyle="light-content" />
-        <ActivityIndicator size="large" color={ACCENT} />
+        <ActivityIndicator size="large" color={root.Tcolors.ACCENT} />
         <Text style={styles.loadingText}>Locating you…</Text>
       </View>
     );
@@ -348,19 +131,12 @@ export default function PrayTimes() {
       <View style={styles.center}>
         <Text style={styles.errorIcon}>⚠</Text>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryBtn}
-          onPress={() => {
-            hasFetched.current = false;
-            init();
-          }}
-        >
+        <TouchableOpacity style={styles.retryBtn} onPress={retry}>
           <Text style={styles.retryText}>Try again</Text>
         </TouchableOpacity>
       </View>
     );
 
-  const next = prayerTimes ? getNextPrayer(prayerTimes) : null;
   const dayPct = getDayProgress();
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "short",
@@ -377,15 +153,16 @@ export default function PrayTimes() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={ACCENT}
+            onRefresh={refresh}
+            tintColor={root.Tcolors.ACCENT}
           />
         }
       >
         <LinearGradient
-          colors={[HERO_TOP, HERO_BTM]}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
+          colors={[
+            root.Tcolors.secondaryBackground,
+            root.Tcolors.heroGradientStart,
+          ]}
           style={styles.hero}
         >
           <StarField />
@@ -397,29 +174,31 @@ export default function PrayTimes() {
               </View>
               <Text style={styles.dateText}>{dateStr}</Text>
             </View>
-            {next && (
+
+            {isStale && (
+              <View style={styles.staleBanner}>
+                <Text style={styles.staleText}>
+                  ⚠ Offline — showing last saved prayer times, may be outdated
+                </Text>
+              </View>
+            )}
+
+            {nextPrayer && (
               <View style={styles.nextBlock}>
                 <Text style={styles.nextLabel}>NEXT PRAYER</Text>
-                <Text style={styles.nextName}>{next.name}</Text>
+                <Text style={styles.nextName}>{nextPrayer.name}</Text>
                 <Text style={styles.nextTime}>
-                  {formatTo12(next.time)} ·{" "}
-                  {getCountdown(next.time, next.isTomorrow)}
+                  {formatTo12(nextPrayer.time)} ·{" "}
+                  {getCountdown(nextPrayer.time, nextPrayer.isTomorrow)}
                 </Text>
                 <View style={styles.progressTrack}>
                   <View
                     style={[styles.progressFill, { width: `${dayPct * 100}%` }]}
                   />
                 </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Text style={styles.progressLabel}>
-                    Day {Math.round(dayPct * 100)}% complete
-                  </Text>
-                </View>
+                <Text style={styles.progressLabel}>
+                  Day {Math.round(dayPct * 100)}% complete
+                </Text>
               </View>
             )}
           </Animated.View>
@@ -431,33 +210,31 @@ export default function PrayTimes() {
               <PrayerRow
                 name={name}
                 time={prayerTimes?.[name]}
-                isNext={next?.name === name}
+                isNext={nextPrayer?.name === name}
                 index={i}
-                isTomorrow={next?.name === name ? next.isTomorrow : false}
+                isTomorrow={
+                  nextPrayer?.name === name ? nextPrayer.isTomorrow : false
+                }
               />
               {i < PRAYERS.length - 1 && <View style={styles.separator} />}
             </React.Fragment>
           ))}
         </View>
-
-        <QiblaCompass userLat={coords?.latitude} userLon={coords?.longitude} />
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG_DARK },
+  root: { flex: 1, backgroundColor: root.Tcolors.BG_DARK },
   scroll: { flex: 1 },
   center: {
     flex: 1,
-    backgroundColor: BG_DARK,
+    backgroundColor: root.Tcolors.BG_DARK,
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
   },
-
   loadingText: { color: "rgba(255,255,255,0.4)", fontSize: 14, marginTop: 8 },
   errorIcon: { fontSize: 32, color: "#e05c5c", marginBottom: 4 },
   errorText: {
@@ -474,7 +251,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: "rgba(255,255,255,0.2)",
   },
-  retryText: { color: ACCENT, fontSize: 14 },
+  retryText: { color: root.Tcolors.ACCENT, fontSize: 14 },
 
   hero: {
     paddingTop: 56,
@@ -500,9 +277,30 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     gap: 6,
   },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: ACCENT },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: root.Tcolors.ACCENT,
+  },
   locationText: { color: "rgba(255,255,255,0.65)", fontSize: 12 },
   dateText: { color: "rgba(255,255,255,0.35)", fontSize: 12 },
+
+  staleBanner: {
+    backgroundColor: "rgba(224,92,92,0.12)",
+    borderWidth: 0.5,
+    borderColor: "rgba(224,92,92,0.3)",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 18,
+  },
+  staleText: {
+    fontSize: 11.5,
+    color: "#e8a3a3",
+    lineHeight: 16,
+  },
+
   nextBlock: {},
   nextLabel: {
     fontSize: 10,
@@ -530,10 +328,18 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 6,
   },
-  progressFill: { height: "100%", backgroundColor: ACCENT, borderRadius: 2 },
-  progressLabel: { fontSize: 11, color: ACCENT, letterSpacing: 0.44 },
+  progressFill: {
+    height: "100%",
+    backgroundColor: root.Tcolors.ACCENT,
+    borderRadius: 2,
+  },
+  progressLabel: {
+    fontSize: 11,
+    color: root.Tcolors.ACCENT,
+    letterSpacing: 0.44,
+  },
 
-  list: { backgroundColor: BG_DARK, paddingTop: 12 },
+  list: { backgroundColor: root.Tcolors.BG_DARK, paddingTop: 12 },
   prayerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -548,7 +354,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: ACCENT,
+    backgroundColor: root.Tcolors.ACCENT,
     borderTopRightRadius: 2,
     borderBottomRightRadius: 2,
   },
@@ -580,7 +386,7 @@ const styles = StyleSheet.create({
   },
   prayerCountdown: {
     fontSize: 10,
-    color: ACCENT,
+    color: root.Tcolors.ACCENT,
     marginTop: 2,
     letterSpacing: 0.4,
   },

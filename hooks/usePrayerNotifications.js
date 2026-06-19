@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -28,15 +29,18 @@ const PRAYER_ARABIC = {
 };
 
 const PRAYER_MESSAGES = {
-  الفجر: "﴿ وَقُرْآنَ الْفَجْرِ ۖ إِنَّ قُرْآنَ الْفَجْرِ كَانَ مَشْهُودًا ﴾",
-  الشروق: "﴿ وَجَعَلْنَا النَّهَارَ مَعَاشًا ﴾",
-  الظهر: "﴿ وَأَقِمِ الصَّلَاةَ لِذِكْرِي ﴾",
-  العصر: "﴿ حَافِظُوا عَلَى الصَّلَوَاتِ وَالصَّلَاةِ الْوُسْطَى ﴾",
-  المغرب: "﴿ فَسُبْحَانَ اللَّهِ حِينَ تُمْسُونَ وَحِينَ تُصْبِحُونَ ﴾",
-  العشاء: "قال ﷺ: مَن صلَّى العشاءَ في جماعةٍ فكأنما قام نصفَ الليلِ",
+  Fajr: "وَقُرْآنَ الْفَجْرِ ۖ إِنَّ قُرْآنَ الْفَجْرِ كَانَ مَشْهُودًا",
+  Sunrise: "وَجَعَلْنَا النَّهَارَ مَعَاشًا",
+  Dhuhr: "وَأَقِمِ الصَّلَاةَ لِذِكْرِي",
+  Asr: "حَافِظُوا عَلَى الصَّلَوَاتِ وَالصَّلَاةِ الْوُسْطَى",
+  Maghrib: "فَسُبْحَانَ اللَّهِ حِينَ تُمْسُونَ وَحِينَ تُصْبِحُونَ",
+  Isha: "قال ﷺ: مَن صلَّى العشاءَ في جماعةٍ فكأنما قام نصفَ الليلِ",
 };
 
 const NOTIF_ENABLED_KEY = "notif_enabled";
+
+const PRAYERS = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+const OBLIGATORY_PRAYERS = new Set(["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]);
 
 export function usePrayerNotifications(prayerTimes) {
   const [permissionStatus, setPermissionStatus] = useState(null);
@@ -83,11 +87,13 @@ export function usePrayerNotifications(prayerTimes) {
 
   const cancelAll = useCallback(async () => {
     const pending = await Notifications.getAllScheduledNotificationsAsync();
-    const prayerIds = pending.filter((n) => n.content.data?.isPrayerNotification);
+    const prayerIds = pending.filter(
+      (n) => n.content.data?.isPrayerNotification,
+    );
     await Promise.all(
       prayerIds.map((n) =>
-        Notifications.cancelScheduledNotificationAsync(n.identifier)
-      )
+        Notifications.cancelScheduledNotificationAsync(n.identifier),
+      ),
     );
     setScheduledCount(0);
   }, []);
@@ -100,16 +106,17 @@ export function usePrayerNotifications(prayerTimes) {
       setIsScheduling(true);
       try {
         const pending = await Notifications.getAllScheduledNotificationsAsync();
-        const prayerIds = pending.filter((n) => n.content.data?.isPrayerNotification);
+        const prayerIds = pending.filter(
+          (n) => n.content.data?.isPrayerNotification,
+        );
         await Promise.all(
           prayerIds.map((n) =>
-            Notifications.cancelScheduledNotificationAsync(n.identifier)
-          )
+            Notifications.cancelScheduledNotificationAsync(n.identifier),
+          ),
         );
 
         const now = new Date();
-        let count = 0;
-        const PRAYERS = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+        let obligatoryCount = 0;
 
         for (const name of PRAYERS) {
           const t = parseTime(times[name]);
@@ -124,18 +131,20 @@ export function usePrayerNotifications(prayerTimes) {
             },
             trigger: { type: "date", date: t },
           });
-          count++;
+          if (OBLIGATORY_PRAYERS.has(name)) {
+            obligatoryCount++;
+          }
         }
 
-        setScheduledCount(count);
+        setScheduledCount(obligatoryCount);
         setLastScheduledFor(now.toLocaleDateString());
         scheduledRef.current = true;
-        return count;
+        return obligatoryCount;
       } finally {
         setIsScheduling(false);
       }
     },
-    [prayerTimes, permissionStatus, isScheduling]
+    [prayerTimes, permissionStatus, isScheduling],
   );
 
   const toggle = useCallback(async () => {
@@ -176,7 +185,7 @@ export function usePrayerNotifications(prayerTimes) {
       });
       return id;
     },
-    [permissionStatus]
+    [permissionStatus],
   );
 
   const getPending = useCallback(async () => {

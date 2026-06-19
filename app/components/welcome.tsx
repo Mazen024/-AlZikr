@@ -4,8 +4,8 @@ export default function Index() {
   return (
     <View>
       <Image
-        source={require("../../assets/images/back2.png")}
-        style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+        source={require("../../assets/images/back.png")}
+        style={{ width: "100%", height: "100%", resizeMode: "contain" }}
       />
     </View>
   );

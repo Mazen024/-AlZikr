@@ -19,14 +19,17 @@ const BOOK_PALETTES = [
 const Tcolors = {
   quranbackground: "#F8F1E4",
 
-   // ===== Background Colors =====
-  primaryBackground: "#0c1520",          // الخلفية الرئيسية الداكنة
-  secondaryBackground: "#111e2d",        // خلفية ثانوية للعناصر الداخلية
-  heroGradientStart: "#1a3a5c",          // بداية التدرج اللوني للهيدر
-  heroGradientEnd: "#0d2137",            // نهاية التدرج اللوني للهيدر
+  ACCENT: "#4eca8b",
+  BG_DARK: "#0c1520",
+
+  // ===== Background Colors =====
+  primaryBackground: "#0c1520", // الخلفية الرئيسية الداكنة
+  secondaryBackground: "#111e2d", // خلفية ثانوية للعناصر الداخلية
+  heroGradientStart: "#1a3a5c", // بداية التدرج اللوني للهيدر
+  heroGradientEnd: "#0d2137", // نهاية التدرج اللوني للهيدر
 
   // ===== Primary Brand Colors =====
-  primaryLight: "#2d9c7a",               // اللون الأساسي الأخضر الفاتح
+  primaryLight: "#2d9c7a", // اللون الأساسي الأخضر الفاتح
   primaryDark: "#0a4d3c",
   accentGreen: "#1a7a5e",
   primaryLightTransparent: "rgba(78,202,139,0.10)", // نسخة شفافة من اللون الأساسي
@@ -43,11 +46,10 @@ const Tcolors = {
 
   // ===== Card Colors =====
   cardBackground: "rgba(255,255,255,0.05)", // خلفية البطاقات
-  cardBorder: "rgba(255,255,255,0.08)",     // حدود البطاقات
+  cardBorder: "rgba(255,255,255,0.08)", // حدود البطاقات
 
   // ===== Pill / Badge Colors =====
-  pillBackground: "rgba(255,255,255,0.08)", // خلفية العناصر الصغيرة (Pills)
-  pillBorder: "rgba(255,255,255,0.12)",     // حدود العناصر الصغيرة
+  pillBorder: "rgba(255,255,255,0.12)", // حدود العناصر الصغيرة
 
   // ===== Status Colors =====
   recordingRed: "#dc2626",
@@ -55,7 +57,6 @@ const Tcolors = {
   successGreen: "#10b981",
 
   // ===== Other Existing App Colors =====
-  quranBackground: "#F8F1E4",
   lightGray: "#f7fafc",
   mediumGray: "#e2e8f0",
   darkGray: "#2d3748",
@@ -63,7 +64,6 @@ const Tcolors = {
 
   border: "rgba(78,202,139,0.12)",
   borderBright: "rgba(78,202,139,0.35)",
-  gold: "#4eca8b",
   goldLight: "#7edba8",
   goldDim: "rgba(78,202,139,0.45)",
   textSub: "rgba(255, 255, 255, 0.38)",

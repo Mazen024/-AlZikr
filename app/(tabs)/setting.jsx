@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Location from "expo-location";
 import * as StoreReview from "expo-store-review";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -16,10 +15,10 @@ import {
 } from "react-native";
 import { usePrayerContext } from "../../context/PrayerContext";
 import { usePrayerNotifications } from "../../hooks/usePrayerNotifications";
+import { DONATIONS } from "../constants/homeConstants";
 import root from "../constants/root";
 
 const { Tcolors, Fonts, FontSizes, Spacing, BorderRadius } = root;
-const ACCENT = "#4eca8b";
 const METHOD_KEY = "calc_method";
 
 const CALC_METHODS = [
@@ -32,6 +31,21 @@ const CALC_METHODS = [
   { id: 8, name: "خليج الكويت" },
   { id: 9, name: "وزارة الأوقاف المصرية" },
 ];
+
+function DonationCard({ item, onPress }) {
+  return (
+    <View style={styles.donationCard} activeOpacity={0.8}>
+      <View style={[styles.donationIcon, { backgroundColor: item.iconBg }]}>
+        <Text style={{ fontSize: 22 }}>{item.icon}</Text>
+      </View>
+      <Text style={styles.donationTitle}>{item.title}</Text>
+      <Text style={styles.donationSub}>{item.sub}</Text>
+      <TouchableOpacity onPress={onPress} style={styles.donationCta}>
+        <Text style={styles.donationCtaText}>تبرع الآن</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 function SectionLabel({ label }) {
   return <Text style={styles.sectionLabel}>{label}</Text>;
@@ -48,7 +62,7 @@ function SettingRow({ icon, title, sub, right, onPress, danger, loading }) {
       {icon && (
         <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>
           {loading ? (
-            <ActivityIndicator size="small" color={ACCENT} />
+            <ActivityIndicator size="small" color={Tcolors.ACCENT} />
           ) : (
             <Text style={{ fontSize: 15 }}>{icon}</Text>
           )}
@@ -111,8 +125,7 @@ function CalcMethodModal({ visible, selected, onSelect, onClose }) {
 }
 
 export default function SettingsPage() {
-  const { prayerTime, setPrayerTime } = usePrayerContext();
-  const [isFetching, setIsFetching] = useState(false);
+  const { prayerTimes, refresh, loading } = usePrayerContext();
   const [showMethodPicker, setShowMethodPicker] = useState(false);
   const [calcMethod, setCalcMethodState] = useState(CALC_METHODS[4]);
 
@@ -136,41 +149,13 @@ export default function SettingsPage() {
     }
   };
 
-  const fetchIfNeeded = useCallback(async () => {
-    if (prayerTime || isFetching) return;
-    setIsFetching(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
-      const loc = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = loc.coords;
-      const today = new Date();
-      const date = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
-      const res = await fetch(
-        `https://api.aladhan.com/v1/timings/${date}?latitude=${latitude}&longitude=${longitude}&method=${calcMethod.id}`,
-      );
-      const data = await res.json();
-      if (data.code === 200) setPrayerTime(data.data.timings);
-    } catch (e) {
-      console.warn("Settings fetch failed:", e.message);
-    } finally {
-      setIsFetching(false);
-    }
-  }, [prayerTime, isFetching, setPrayerTime, calcMethod]);
-
-  useEffect(() => {
-    fetchIfNeeded();
-  }, [fetchIfNeeded]);
-
   const { enabled, toggle, scheduledCount, isScheduling } =
-    usePrayerNotifications(prayerTime);
-
-  const isLoading = isFetching || isScheduling;
+    usePrayerNotifications(prayerTimes);
 
   function notifSubLabel() {
-    if (isFetching) return "جاري تحميل الأوقات…";
+    if (loading) return "جاري تحميل الأوقات…";
     if (isScheduling) return "جاري الجدولة…";
-    if (!prayerTime) return "لم يتم تحميل الأوقات";
+    if (!prayerTimes) return "لم يتم تحميل الأوقات";
     if (enabled) return `${scheduledCount} صلوات مجدولة اليوم`;
     return "معطّل";
   }
@@ -208,7 +193,7 @@ export default function SettingsPage() {
         selected={calcMethod}
         onSelect={(m) => {
           setCalcMethod(m);
-          setPrayerTime(null);
+          refresh();
         }}
         onClose={() => setShowMethodPicker(false)}
       />
@@ -220,14 +205,17 @@ export default function SettingsPage() {
             icon="🔔"
             title="إشعارات الصلاة"
             sub={notifSubLabel()}
-            loading={isLoading}
+            loading={loading}
             right={
               <Switch
                 value={enabled}
                 onValueChange={toggle}
-                disabled={isLoading || !prayerTime}
-                trackColor={{ false: "rgba(255,255,255,0.12)", true: ACCENT }}
-                thumbColor={isLoading ? "rgba(255,255,255,0.35)" : "#fff"}
+                disabled={loading || !prayerTimes}
+                trackColor={{
+                  false: "rgba(255,255,255,0.12)",
+                  true: Tcolors.ACCENT,
+                }}
+                thumbColor={loading ? "rgba(255,255,255,0.35)" : "#fff"}
                 ios_backgroundColor="rgba(255,255,255,0.12)"
               />
             }
@@ -310,29 +298,21 @@ export default function SettingsPage() {
         </Group>
 
         <SectionLabel label="غزة في قلوبنا 🇵🇸" />
-        <Group>
-          <SettingRow
-            icon="🕊"
-            title="ادعم غزة"
-            sub="تبرع عبر UNRWA"
-            danger
-            onPress={() => Linking.openURL("https://www.unrwa.org/donate")}
-            right={
-              <Text style={[styles.chevron, { color: "#e4312b" }]}>›</Text>
-            }
-          />
-          <View style={styles.divider} />
-          <SettingRow
-            icon="🌍"
-            title="منظمة أطباء بلا حدود"
-            sub="دعم طبي عاجل لغزة"
-            danger
-            onPress={() => Linking.openURL("https://www.msf.org/donate")}
-            right={
-              <Text style={[styles.chevron, { color: "#e4312b" }]}>›</Text>
-            }
-          />
-        </Group>
+        <ScrollView
+          horizontal
+          style={{ direction: "rtl" }}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.donationsRow}
+        >
+          {DONATIONS.map((item) => (
+            <View key={item.title}>
+              <DonationCard
+                item={item}
+                onPress={() => Linking.openURL(item.url)}
+              />
+            </View>
+          ))}
+        </ScrollView>
 
         <View style={{ height: 48 }} />
       </ScrollView>
@@ -464,7 +444,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.cairoRegular,
   },
   methodCheck: {
-    color: ACCENT,
+    color: Tcolors.ACCENT,
     fontSize: 16,
     marginLeft: 10,
   },
@@ -479,5 +459,54 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.6)",
     fontSize: 14,
     fontFamily: Fonts.cairoRegular,
+  },
+  donationsRow: {
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  donationCard: {
+    width: 150,
+    backgroundColor: Tcolors.card || "rgba(255,255,255,0.05)",
+    borderRadius: BorderRadius.lg || 16,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.08)",
+    padding: 14,
+    alignItems: "flex-start",
+  },
+  donationIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  donationTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Tcolors.primaryText,
+    textAlign: "right",
+    fontFamily: Fonts.arabic,
+  },
+  donationSub: {
+    fontSize: 11,
+    color: Tcolors.secondaryText || "rgba(255,255,255,0.45)",
+    textAlign: "right",
+    marginTop: 4,
+    marginBottom: 12,
+    fontFamily: Fonts.arabic,
+  },
+  donationCta: {
+    alignSelf: "stretch",
+    backgroundColor: Tcolors.BG_DARK,
+    borderRadius: 10,
+    paddingVertical: 7,
+    alignItems: "center",
+  },
+  donationCtaText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Tcolors.primaryLight,
+    fontFamily: Fonts.arabic,
   },
 });

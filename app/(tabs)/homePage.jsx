@@ -1,68 +1,73 @@
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
+  Dimensions,
   Image,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { usePrayerContext } from "../../context/PrayerContext.jsx";
+import { formatTo12, getCountdown } from "../../hooks/usePrayerTimes";
+import {
+  FEATURES,
+  getGreeting,
+  getHijriDate,
+  PRAYERS,
+} from "../constants/homeConstants";
 import root from "../constants/root.jsx";
 
 const { Fonts, FontSizes, Spacing, BorderRadius, Tcolors } = root;
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const getHijriDate = () =>
-  new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date());
+const GRID_GAP = Spacing.sm;
+const GRID_COLUMNS = 3;
+const GRID_CARD_SIZE =
+  (SCREEN_WIDTH - Spacing.md * 2 - GRID_GAP * (GRID_COLUMNS - 1)) /
+  GRID_COLUMNS;
 
-const getGreeting = () =>
-  new Date().getHours() < 12 ? "صبحك الله بالخير" : "مساك الله بالخير";
-
-function FeatureCard({ emoji, title, subtitle, onPress, index }) {
+function FeatureCard({ icon, title, onPress, index }) {
   const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(20)).current;
+  const scale = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, {
         toValue: 1,
-        duration: 340,
-        delay: 300 + index * 70,
+        duration: 300,
+        delay: 250 + index * 50,
         useNativeDriver: true,
       }),
-      Animated.timing(slide, {
-        toValue: 0,
-        duration: 340,
-        delay: 300 + index * 70,
+      Animated.spring(scale, {
+        toValue: 1,
+        delay: 250 + index * 50,
         useNativeDriver: true,
+        friction: 7,
+        tension: 80,
       }),
     ]).start();
-  }, [fade, index, slide]);
+  }, [fade, index, scale]);
 
   return (
     <Animated.View
-      style={{ opacity: fade, transform: [{ translateY: slide }] }}
+      style={[styles.gridItem, { opacity: fade, transform: [{ scale }] }]}
     >
       <TouchableOpacity
         style={styles.featureCard}
         onPress={onPress}
-        activeOpacity={0.75}
+        activeOpacity={0.7}
       >
-        <View style={styles.featureIcon}>
-          <Text style={styles.featureEmoji}>{emoji}</Text>
-        </View>
-        <View style={styles.featureText}>
-          <Text style={styles.featureTitle}>{title}</Text>
-          <Text style={styles.featureSubtitle}>{subtitle}</Text>
-        </View>
-        <Text style={styles.chevron}>›</Text>
+        <Image source={icon} style={styles.featureIcon} />
+        <Text style={styles.featureTitle} numberOfLines={2}>
+          {title}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -73,6 +78,16 @@ const HomePage = () => {
   const [hijriDate, setHijriDate] = useState(getHijriDate());
   const [greeting, setGreeting] = useState(getGreeting());
   const heroAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const {
+    prayerTimes,
+    nextPrayer,
+    loading,
+    error,
+    refreshing,
+    refresh,
+    retry,
+  } = usePrayerContext();
 
   useEffect(() => {
     const update = () => {
@@ -83,92 +98,200 @@ const HomePage = () => {
     const iv = setInterval(update, 60_000);
     Animated.timing(heroAnim, {
       toValue: 1,
-      duration: 700,
+      duration: 600,
       useNativeDriver: true,
     }).start();
-    return () => clearInterval(iv);
-  }, [heroAnim]);
 
-  const FEATURES = [
-    {
-      emoji: "🎙️",
-      title: "تسميع القرآن الكريم",
-      subtitle: "ابدأ التسجيل الآن",
-      route: "/Quran/Quran",
-    },
-    {
-      emoji: "📖",
-      title: "جامع كتب الأحاديث",
-      subtitle: "تصفح الأحاديث",
-      route: "/Hadith/HadithHome",
-    },
-    {
-      emoji: "⏰",
-      title: "توقيت الصلاة",
-      subtitle: "اعرف أوقات الصلاة",
-      route: "/ForPray/prayTimes",
-    },
-  ];
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.06,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+
+    return () => clearInterval(iv);
+  }, [heroAnim, pulseAnim]);
+
+  const nextPrayerInfo = PRAYERS.find(
+    (prayer) => prayer.key === nextPrayer?.name,
+  );
+
+  if (loading)
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Tcolors.ACCENT} />
+        <Text style={styles.loadingText}>Locating you…</Text>
+      </View>
+    );
+
+  if (error)
+    return (
+      <View style={styles.center}>
+        <View style={styles.errorIconWrap}>
+          <Ionicons name="alert-circle-outline" size={36} color="#e05c5c" />
+        </View>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryBtn}
+          onPress={retry}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="refresh" size={16} color={Tcolors.ACCENT} />
+          <Text style={styles.retryText}>Try again</Text>
+        </TouchableOpacity>
+      </View>
+    );
 
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.bellBtn}>
-          <Text style={styles.bellIcon}>🔔</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
+        <View style={styles.headerLeft}>
           <Image
             source={require("../../assets/images/logo.png")}
             style={styles.headerLogo}
           />
-          <View style={styles.headerTextContainer}>
+          <View>
             <Text style={styles.headerTitle}>{greeting}</Text>
             <Text style={styles.headerSubTitle}>{hijriDate}</Text>
           </View>
         </View>
+        <TouchableOpacity style={styles.bellBtn} activeOpacity={0.7}>
+          <Ionicons
+            name="notifications-outline"
+            size={20}
+            color={Tcolors.primaryText}
+          />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <LinearGradient
-          colors={[Tcolors.heroGradientStart, Tcolors.heroGradientEnd]}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={styles.hero}
-        >
-          <Animated.View style={{ opacity: heroAnim }}>
-            <View style={styles.verseInner}>
-              <Text style={styles.verseArabic}>
-                ﴿ وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُدَّكِرٍ
-                ﴾
-              </Text>
-              <View style={styles.verseDivider} />
-              <Text style={styles.verseReference}>سورة القمر — الآية ١٧</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor={Tcolors.ACCENT}
+          />
+        }
+      >
+        <Animated.View style={{ opacity: heroAnim }}>
+          <LinearGradient
+            colors={[Tcolors.heroGradientStart, Tcolors.heroGradientEnd]}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={styles.hero}
+          >
+            <View style={styles.heroTopRow}>
+              <View style={styles.livePill}>
+                <Animated.View
+                  style={[
+                    styles.liveDot,
+                    { transform: [{ scale: pulseAnim }] },
+                  ]}
+                />
+                <Text style={styles.livePillText}>الصلاة القادمة</Text>
+              </View>
             </View>
-          </Animated.View>
-        </LinearGradient>
+
+            {nextPrayer && (
+              <View style={styles.nextRow}>
+                <View>
+                  <Text style={styles.nextName}>
+                    {nextPrayerInfo?.arabic || nextPrayer.name}
+                  </Text>
+                  <Text style={styles.nextTime}>
+                    {formatTo12(nextPrayer.time)}
+                  </Text>
+                </View>
+                <View style={styles.countdownChip}>
+                  <Ionicons
+                    name="time-outline"
+                    size={14}
+                    color={Tcolors.primaryLight}
+                  />
+                  <Text style={styles.remaining}>
+                    {getCountdown(nextPrayer.time, nextPrayer.isTomorrow)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.verseDivider} />
+
+            <Text style={styles.verseArabic}>
+              وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُدَّكِرٍ
+            </Text>
+          </LinearGradient>
+        </Animated.View>
+
+        <Animated.View style={{ opacity: heroAnim }}>
+          <View style={styles.prayerRow}>
+            {PRAYERS.map((prayer, i) => {
+              const isActive = nextPrayer?.name === prayer.key;
+              return (
+                <React.Fragment key={prayer.key}>
+                  {i > 0 && <View style={styles.prayerDivider} />}
+                  <View style={styles.prayerItem}>
+                    <Ionicons
+                      name={prayer.icon}
+                      size={18}
+                      color={
+                        isActive
+                          ? Tcolors.primaryLight
+                          : "rgba(255,255,255,0.35)"
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.prayerItemName,
+                        isActive && styles.prayerItemActive,
+                      ]}
+                    >
+                      {prayer.arabic}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.prayerItemTime,
+                        isActive && styles.prayerItemActive,
+                      ]}
+                    >
+                      {formatTo12(prayerTimes?.[prayer.key])}
+                    </Text>
+                  </View>
+                </React.Fragment>
+              );
+            })}
+          </View>
+        </Animated.View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ميزات سريعة</Text>
-
-          {FEATURES.map((f, i) => (
-            <FeatureCard
-              key={f.route}
-              emoji={f.emoji}
-              title={f.title}
-              subtitle={f.subtitle}
-              onPress={() => router.push(f.route)}
-              index={i}
-            />
-          ))}
+          <View style={styles.grid}>
+            {FEATURES.map((f, i) => (
+              <FeatureCard
+                key={f.route}
+                icon={f.icon}
+                title={f.title}
+                onPress={() => router.push(f.route)}
+                index={i}
+              />
+            ))}
+          </View>
         </View>
-
-        <View style={{ height: 32 }} />
       </ScrollView>
     </View>
   );
 };
 
-// ── Styles ─────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -178,22 +301,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    direction: "rtl",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.mdd,
+    paddingVertical: Spacing.md,
     backgroundColor: Tcolors.secondaryBackground,
     borderBottomWidth: 0.5,
     borderBottomColor: Tcolors.cardBorder,
   },
 
-  headerCenter: {
-    flexDirection: "row-reverse",
+  headerLeft: {
+    flexDirection: "row",
     alignItems: "center",
     gap: 10,
-  },
-
-  headerTextContainer: {
-    alignItems: "flex-end",
   },
 
   headerLogo: {
@@ -221,27 +341,134 @@ const styles = StyleSheet.create({
     height: Spacing.xl,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Tcolors.pillBackground,
+    backgroundColor: Tcolors.cardBorder,
     borderRadius: BorderRadius.md,
     borderWidth: 0.5,
     borderColor: Tcolors.pillBorder,
   },
 
-  bellIcon: {
-    fontSize: FontSizes.body,
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: Spacing.xl },
+
+  center: {
+    flex: 1,
+    backgroundColor: Tcolors.BG_DARK,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: { color: "rgba(255,255,255,0.4)", fontSize: 14, marginTop: 8 },
+  errorIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(224,92,92,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  errorText: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 15,
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
+  retryBtn: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  retryText: {
+    color: Tcolors.ACCENT,
+    fontSize: 14,
+    fontWeight: "600",
   },
 
-  scroll: { flex: 1 },
-
   hero: {
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.md,
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xl,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
+    borderRadius: BorderRadius.lg,
     overflow: "hidden",
   },
 
-  verseInner: {
+  heroTopRow: {
+    flexDirection: "row-reverse",
+    marginBottom: Spacing.sm,
+  },
+
+  livePill: {
+    flexDirection: "row-reverse",
     alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.circular,
+  },
+
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Tcolors.ACCENT,
+  },
+
+  livePillText: {
+    fontSize: 12,
+    color: Tcolors.white,
+    fontFamily: Fonts.cairoRegular,
+  },
+
+  nextRow: {
+    flexDirection: "row-reverse",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+
+  nextName: {
+    fontSize: 34,
+    fontWeight: "300",
+    color: "#fff",
+    letterSpacing: -1,
+    textAlign: "right",
+  },
+
+  nextTime: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.55)",
+    marginTop: 2,
+    textAlign: "right",
+  },
+
+  countdownChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(0,0,0,0.18)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.md,
+  },
+
+  remaining: {
+    fontSize: 13,
+    color: Tcolors.primaryLight,
+    fontWeight: "600",
+  },
+
+  verseDivider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    marginVertical: Spacing.md,
   },
 
   verseArabic: {
@@ -249,92 +476,90 @@ const styles = StyleSheet.create({
     color: Tcolors.white,
     textAlign: "center",
     fontFamily: Fonts.amiriRegular,
-    lineHeight: Spacing.xl + 8,
-    marginBottom: Spacing.sm,
+    lineHeight: Spacing.xl,
   },
 
-  verseDivider: {
-    width: 40,
-    height: 1,
-    backgroundColor: Tcolors.primaryLight,
-    borderRadius: 1,
-    marginVertical: Spacing.sm,
-    opacity: 0.6,
-  },
-
-  verseReference: {
-    fontSize: FontSizes.small,
-    color: Tcolors.primaryLight,
-    fontFamily: Fonts.cairoRegular,
+  prayerScrollRow: {
+    flexDirection: "row-reverse",
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    gap: Spacing.sm,
   },
 
   section: {
-    marginTop: Spacing.mdd ?? Spacing.md,
+    marginTop: Spacing.lg,
     paddingHorizontal: Spacing.md,
   },
 
-  sectionTitle: {
-    fontSize: FontSizes.body,
-    fontWeight: "700",
-    color: Tcolors.tertiaryText,
-    marginBottom: Spacing.md,
-    fontFamily: Fonts.cairoBold,
-    alignSelf: "flex-end",
-    letterSpacing: 0.5,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+
+  gridItem: {
+    width: GRID_CARD_SIZE,
+    marginBottom: GRID_GAP + 15,
   },
 
   featureCard: {
-    backgroundColor: Tcolors.cardBackground,
-    flexDirection: "row",
+    width: "100%",
+    aspectRatio: 1,
+    backgroundColor: Tcolors.secondaryBackground,
     alignItems: "center",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.sm,
+    justifyContent: "center",
+    padding: Spacing.xs,
+    borderRadius: BorderRadius.md,
     borderWidth: 0.5,
     borderColor: Tcolors.cardBorder,
-    position: "relative",
-    overflow: "hidden",
+    gap: 6,
   },
 
   featureIcon: {
-    width: Spacing.xxxl,
-    height: Spacing.xxxl,
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing.md,
-  },
-
-  featureEmoji: {
-    fontSize: FontSizes.h2,
-  },
-
-  featureText: {
-    flex: 1,
-    alignItems: "flex-end",
+    width: 50,
+    height: 50,
+    resizeMode: "contain",
   },
 
   featureTitle: {
-    fontSize: FontSizes.body,
+    fontSize: 11.5,
     fontWeight: "700",
-    color: Tcolors.primaryText,
-    marginBottom: 3,
-    fontFamily: Fonts.cairoBold,
-    textAlign: "right",
-  },
-
-  featureSubtitle: {
-    fontSize: FontSizes.small,
     color: Tcolors.primaryLight,
-    fontFamily: Fonts.cairoRegular,
-    textAlign: "right",
+    fontFamily: Fonts.cairoBold,
+    textAlign: "center",
   },
-
-  chevron: {
-    fontSize: 22,
-    color: Tcolors.tertiaryText,
-    marginLeft: Spacing.sm,
+  prayerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    direction: "rtl",
+    backgroundColor: Tcolors.secondaryBackground,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  prayerItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  prayerDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  prayerItemName: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.5)",
+    fontFamily: Fonts.cairoRegular,
+  },
+  prayerItemTime: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.75)",
+    fontWeight: "500",
+  },
+  prayerItemActive: {
+    color: Tcolors.primaryLight,
   },
 });
 

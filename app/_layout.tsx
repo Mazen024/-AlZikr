@@ -1,6 +1,8 @@
+import { StatusBar } from "expo-status-bar";
 import { Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PrayerProvider } from "../context/PrayerContext";
+
 
 export default function RootLayout() {
   return (
@@ -12,6 +14,11 @@ export default function RootLayout() {
         }}
         edges={["top"]}
       >
+        <StatusBar
+          style="light"
+          backgroundColor="#111e2d"
+        />
+
         <Stack
           screenOptions={{
             headerShown: false,

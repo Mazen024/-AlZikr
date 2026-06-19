@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -13,11 +14,11 @@ import {
   View,
 } from "react-native";
 import { getBooks } from "../../service/hadithService";
-import theme from "../constants/root";
+import root from "../constants/root";
 
 const { width } = Dimensions.get("window");
 
-const BOOK_PALETTES = theme.BOOK_PALETTES;
+const BOOK_PALETTES = root.BOOK_PALETTES;
 
 const FAMOUS_HADITHS = [
   {
@@ -109,7 +110,6 @@ function BookCard({ item, index, onPress }) {
             </View>
           </View>
 
-          {/* Gold border line bottom */}
           <View style={styles.bookBottomLine} />
         </LinearGradient>
       </Animated.View>
@@ -179,6 +179,10 @@ export default function HadithHome() {
 
   return (
     <View style={styles.root}>
+      <StatusBar
+        style="light"
+        backgroundColor={root.Tcolors.heroGradientStart}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 48 }}
@@ -186,8 +190,8 @@ export default function HadithHome() {
         <Animated.View style={[styles.header, { opacity: headerFade }]}>
           <LinearGradient
             colors={[
-              theme.Tcolors.heroGradientStart,
-              theme.Tcolors.primaryBackground,
+              root.Tcolors.heroGradientStart,
+              root.Tcolors.primaryBackground,
             ]}
             style={styles.headerGrad}
           >
@@ -202,7 +206,11 @@ export default function HadithHome() {
                 </Text>
               </View>
               <View style={styles.iconCircle}>
-                <Ionicons name="library" size={20} color={theme.Tcolors.gold} />
+                <Ionicons
+                  name="library"
+                  size={20}
+                  color={root.Tcolors.ACCENT}
+                />
               </View>
             </View>
           </LinearGradient>
@@ -271,7 +279,7 @@ export default function HadithHome() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: theme.Tcolors.primaryBackground,
+    backgroundColor: root.Tcolors.primaryBackground,
   },
   header: {
     marginBottom: 0,
@@ -291,20 +299,20 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     backgroundColor: "rgba(212,175,90,0.1)",
     borderWidth: 1,
-    borderColor: theme.Tcolors.border,
+    borderColor: root.Tcolors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   headerTitle: {
     fontSize: 18,
-    color: theme.Tcolors.white,
-    fontFamily: theme.Fonts.amiriBold,
+    color: root.Tcolors.white,
+    fontFamily: root.Fonts.amiriBold,
     letterSpacing: 0.5,
   },
   headerSub: {
     fontSize: 12,
-    color: theme.Tcolors.textSub,
-    fontFamily: theme.Fonts.cairoRegular,
+    color: root.Tcolors.textSub,
+    fontFamily: root.Fonts.cairoRegular,
     marginTop: 2,
   },
   headerBadge: {
@@ -313,14 +321,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "rgba(212,175,90,0.08)",
     borderWidth: 1,
-    borderColor: theme.Tcolors.borderBright,
+    borderColor: root.Tcolors.borderBright,
     justifyContent: "center",
     alignItems: "center",
   },
-  headerBadgeText: { fontSize: 18, color: theme.Tcolors.gold },
+  headerBadgeText: { fontSize: 18, color: root.Tcolors.ACCENT },
   headerUnderline: {
     height: 1,
-    backgroundColor: theme.Tcolors.border,
+    backgroundColor: root.Tcolors.border,
     marginHorizontal: 20,
   },
 
@@ -330,7 +338,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.Tcolors.border,
+    borderColor: root.Tcolors.border,
     overflow: "hidden",
     minHeight: 200,
     justifyContent: "center",
@@ -340,7 +348,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 16,
     height: 16,
-    borderColor: theme.Tcolors.goldDim,
+    borderColor: root.Tcolors.goldDim,
   },
   frameTL: {
     top: 12,
@@ -370,27 +378,27 @@ const styles = StyleSheet.create({
   heroContent: { alignItems: "center" },
   heroIntroLabel: {
     fontSize: 12,
-    color: theme.Tcolors.textSub,
-    fontFamily: theme.Fonts.cairoRegular,
+    color: root.Tcolors.textSub,
+    fontFamily: root.Fonts.cairoRegular,
     letterSpacing: 1,
     marginBottom: 4,
   },
   heroProphetSymbol: {
     fontSize: 28,
-    color: theme.Tcolors.gold,
+    color: root.Tcolors.ACCENT,
     marginBottom: 4,
   },
   heroDivider: {
     width: 48,
     height: 1,
-    backgroundColor: theme.Tcolors.borderBright,
+    backgroundColor: root.Tcolors.borderBright,
     marginVertical: 14,
     borderRadius: 1,
   },
   heroText: {
     fontSize: 18,
-    color: theme.Tcolors.white,
-    fontFamily: theme.Fonts.amiriBold,
+    color: root.Tcolors.white,
+    fontFamily: root.Fonts.amiriBold,
     textAlign: "center",
     lineHeight: 30,
     paddingHorizontal: 8,
@@ -404,13 +412,13 @@ const styles = StyleSheet.create({
   heroRefLine: {
     flex: 1,
     height: 0.5,
-    backgroundColor: theme.Tcolors.borderBright,
+    backgroundColor: root.Tcolors.borderBright,
     maxWidth: 40,
   },
   heroRef: {
     fontSize: 11,
-    color: theme.Tcolors.gold,
-    fontFamily: theme.Fonts.cairoRegular,
+    color: root.Tcolors.ACCENT,
+    fontFamily: root.Fonts.cairoRegular,
   },
 
   sectionHead: {
@@ -419,11 +427,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     marginVertical: 15,
   },
-  sectionLine: { flex: 1, height: 0.5, backgroundColor: theme.Tcolors.border },
+  sectionLine: { flex: 1, height: 0.5, backgroundColor: root.Tcolors.border },
   sectionTitle: {
     fontSize: 13,
-    color: theme.Tcolors.gold,
-    fontFamily: theme.Fonts.cairoBold,
+    color: root.Tcolors.ACCENT,
+    fontFamily: root.Fonts.cairoBold,
     letterSpacing: 2,
   },
 
@@ -436,7 +444,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: theme.Tcolors.border,
+    borderColor: root.Tcolors.border,
   },
   bookGradient: {
     padding: 16,
@@ -460,12 +468,12 @@ const styles = StyleSheet.create({
   },
   bookTopLine: {
     height: 0.5,
-    backgroundColor: theme.Tcolors.borderBright,
+    backgroundColor: root.Tcolors.borderBright,
     marginBottom: 12,
   },
   bookBottomLine: {
     height: 0.5,
-    backgroundColor: theme.Tcolors.borderBright,
+    backgroundColor: root.Tcolors.borderBright,
     marginTop: 10,
   },
 
@@ -477,21 +485,21 @@ const styles = StyleSheet.create({
   },
   bookIndexNum: {
     fontSize: 11,
-    color: theme.Tcolors.goldDim,
-    fontFamily: theme.Fonts.cairoRegular,
+    color: root.Tcolors.goldDim,
+    fontFamily: root.Fonts.cairoRegular,
     letterSpacing: 1,
   },
   bookTitleCard: {
     fontSize: 17,
-    color: theme.Tcolors.white,
-    fontFamily: theme.Fonts.amiriBold,
+    color: root.Tcolors.white,
+    fontFamily: root.Fonts.amiriBold,
     textAlign: "center",
     lineHeight: 26,
   },
   bookAuthorCard: {
     fontSize: 11,
-    color: theme.Tcolors.textSub,
-    fontFamily: theme.Fonts.amiriRegular,
+    color: root.Tcolors.textSub,
+    fontFamily: root.Fonts.amiriRegular,
     textAlign: "center",
   },
 
@@ -505,18 +513,18 @@ const styles = StyleSheet.create({
   statChip: { alignItems: "center", flex: 1 },
   statVal: {
     fontSize: 15,
-    color: theme.Tcolors.gold,
-    fontFamily: theme.Fonts.cairoBold,
+    color: root.Tcolors.ACCENT,
+    fontFamily: root.Fonts.cairoBold,
   },
   statKey: {
     fontSize: 10,
-    color: theme.Tcolors.textSub,
-    fontFamily: theme.Fonts.cairoRegular,
+    color: root.Tcolors.textSub,
+    fontFamily: root.Fonts.cairoRegular,
     marginTop: 1,
   },
   statDivider: {
     width: 0.5,
     height: 24,
-    backgroundColor: theme.Tcolors.border,
+    backgroundColor: root.Tcolors.border,
   },
 });
