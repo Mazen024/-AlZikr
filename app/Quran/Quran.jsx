@@ -1,24 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Modal, StyleSheet, View } from "react-native";
-import quranData from "../../assets/quran/quran copy.json";
 import { useQuranPages } from "../../hooks/useQuranPages";
 import Elfehrest from "../components/Elfehrest";
 import QuranMenu from "../components/QuranMenu";
 import QuranSearch from "../components/search";
-import theme from "../constants/root";
 import QuranControls from "./QuranControls";
 import QuranHeader from "./QuranHeader";
 import QuranPager from "./QuranPager";
 
-// Storage keys
 const STORAGE_KEYS = {
   BOOKMARK: "@quran_bookmark",
   LAST_PAGE: "@quran_last_page",
@@ -35,28 +26,22 @@ const Quran = () => {
   const [isDark, setIsDark] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const flatListRef = useRef(null);
-  const pageBasedData = useQuranPages(quranData);
+  const { pageBasedData, loading: pagesLoading } = useQuranPages();
   const { initialPage } = useLocalSearchParams();
 
-  const loadSavedData = React.useCallback(async () => {
+  const loadSavedData = useCallback(async () => {
     try {
       const savedBookmark = await AsyncStorage.getItem(STORAGE_KEYS.BOOKMARK);
       if (savedBookmark !== null) {
         setPageMarked(Number(savedBookmark));
       }
 
-      if (initialPage === undefined) {
+      if (initialPage !== undefined) {
+        setCurrentPage(Number(initialPage));
+      } else {
         const savedPage = await AsyncStorage.getItem(STORAGE_KEYS.LAST_PAGE);
         if (savedPage !== null) {
-          const pageIndex = Number(savedPage);
-          setCurrentPage(pageIndex);
-
-          setTimeout(() => {
-            flatListRef.current?.scrollToIndex({
-              index: pageIndex,
-              animated: false,
-            });
-          }, 100);
+          setCurrentPage(Number(savedPage));
         }
       }
     } catch (error) {
@@ -70,22 +55,6 @@ const Quran = () => {
     loadSavedData();
   }, [loadSavedData]);
 
-  // Handle initialPage from params
-  useEffect(() => {
-    if (initialPage !== undefined && !isLoading) {
-      const pageIndex = Number(initialPage);
-      setCurrentPage(pageIndex);
-
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: pageIndex,
-          animated: true,
-        });
-      }, 100);
-    }
-  }, [initialPage, isLoading]);
-
-  // Save bookmark when it changes
   useEffect(() => {
     const saveBookmark = async () => {
       try {
@@ -107,7 +76,6 @@ const Quran = () => {
     }
   }, [pageMarked, isLoading]);
 
-  // Save current page when it changes (with debouncing)
   useEffect(() => {
     const saveCurrentPage = async () => {
       try {
@@ -121,7 +89,6 @@ const Quran = () => {
     };
 
     if (!isLoading) {
-      // Debounce the save operation
       const timeoutId = setTimeout(() => {
         saveCurrentPage();
       }, 500);
@@ -138,6 +105,27 @@ const Quran = () => {
   const currentPageData = useMemo(
     () => pageBasedData[currentPage],
     [currentPage, pageBasedData],
+  );
+
+  const isReady = !isLoading && !pagesLoading && pageBasedData.length > 0;
+
+  const startIndex = useMemo(() => {
+    if (!isReady) return 0;
+    return Math.min(Math.max(currentPage, 0), pageBasedData.length - 1);
+  }, [isReady, currentPage, pageBasedData.length]);
+
+  const safeScrollToIndex = useCallback(
+    (index, animated) => {
+      if (index == null || index < 0 || index >= pageBasedData.length) {
+        return;
+      }
+      try {
+        flatListRef.current?.scrollToIndex({ index, animated });
+      } catch (error) {
+        console.warn("scrollToIndex failed:", error);
+      }
+    },
+    [pageBasedData.length],
   );
 
   const handleStartRecording = useCallback(() => {
@@ -166,23 +154,15 @@ const Quran = () => {
 
   const handleGoToBookmark = useCallback(() => {
     if (pageMarked !== null) {
-      try {
-        flatListRef.current?.scrollToIndex({
-          index: pageMarked,
-          animated: true,
-        });
-      } catch (error) {
-        console.warn("Error scrolling to bookmark:", error);
-        Alert.alert("خطأ", "حدث خطأ أثناء الانتقال إلى العلامة المرجعية");
-      }
+      safeScrollToIndex(pageMarked, true);
     } else {
       Alert.alert("علامة مرجعية", "لم يتم حفظ أي صفحة بعد");
     }
-  }, [pageMarked]);
+  }, [pageMarked, safeScrollToIndex]);
 
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, isDark && styles.containerDark]}>
         <QuranHeader
           currentPage={currentPage}
           pageData={currentPageData}
@@ -190,6 +170,7 @@ const Quran = () => {
           bookmarked={bookMark}
           onMenuPress={handleMenuPress}
           onSearchPress={() => setOpenSearchModal(true)}
+          isDark={isDark}
         />
 
         <QuranMenu
@@ -215,19 +196,27 @@ const Quran = () => {
           style={{ flex: 1, opacity: openSearchModal ? 0 : 1 }}
           pointerEvents={openSearchModal ? "none" : "auto"}
         >
-          <QuranPager
-            ref={flatListRef}
-            data={pageBasedData}
-            onPageChange={setCurrentPage}
-            versesVisible={versesVisible}
-            isDark={isDark}
-          />
+          {isReady ? (
+            <QuranPager
+              ref={flatListRef}
+              data={pageBasedData}
+              onPageChange={setCurrentPage}
+              versesVisible={versesVisible}
+              isDark={isDark}
+              initialScrollIndex={startIndex}
+            />
+          ) : (
+            <View
+              style={[styles.placeholder, isDark && styles.placeholderDark]}
+            />
+          )}
 
           <QuranControls
             isRecording={isRecording}
             onRecord={handleStartRecording}
             versesVisible={versesVisible}
             onToggleVerses={handleToggleVerses}
+            isDark={isDark}
           />
         </View>
 
@@ -242,13 +231,7 @@ const Quran = () => {
             onSelect={(pageNumber) => {
               setCurrentPage(pageNumber);
               setOpenIndexModal(false);
-
-              setTimeout(() => {
-                flatListRef.current?.scrollToIndex({
-                  index: pageNumber,
-                  animated: true,
-                });
-              }, 100);
+              safeScrollToIndex(pageNumber, true);
             }}
           />
         </Modal>
@@ -264,13 +247,7 @@ const Quran = () => {
             onSelect={(pageIndex) => {
               setCurrentPage(pageIndex);
               setOpenSearchModal(false);
-
-              setTimeout(() => {
-                flatListRef.current?.scrollToIndex({
-                  index: pageIndex,
-                  animated: true,
-                });
-              }, 100);
+              safeScrollToIndex(pageIndex, true);
             }}
           />
         </Modal>
@@ -282,8 +259,18 @@ const Quran = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.Tcolors.quranbackground,
     overflow: "visible",
+    backgroundColor: "#fdfaf3",
+  },
+  containerDark: {
+    backgroundColor: "#121212",
+  },
+  placeholder: {
+    flex: 1,
+    backgroundColor: "#fdfaf3",
+  },
+  placeholderDark: {
+    backgroundColor: "#121212",
   },
 });
 

@@ -1,16 +1,16 @@
-import React, { useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import theme from "../constants/root";
 
 const QuranControls = React.memo(
-  ({ isRecording, onRecord, versesVisible, onToggleVerses }) => {
+  ({ isRecording, onRecord, versesVisible, onToggleVerses, isDark }) => {
     const shineAnimation = useRef(new Animated.Value(0)).current;
     const pulseAnimation = useRef(new Animated.Value(1)).current;
 
@@ -58,7 +58,6 @@ const QuranControls = React.memo(
       }
     }, [isRecording, pulseAnimation]);
 
-    // Animated shine position
     const shineTranslateX = shineAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [-5, 5],
@@ -70,7 +69,7 @@ const QuranControls = React.memo(
     });
 
     return (
-      <View style={styles.bottomControls}>
+      <View style={[styles.bottomControls, isDark && styles.darkPage]}>
         <View style={styles.controlsRow}>
           <View style={styles.leftControl}>
             <TouchableOpacity>
@@ -111,9 +110,7 @@ const QuranControls = React.memo(
               },
             ]}
           >
-            <View
-              style={[styles.micGlow, isRecording && styles.recordingGlow]}
-            >
+            <View style={[styles.micGlow, isRecording && styles.recordingGlow]}>
               <Ionicons
                 name={isRecording ? "stop-circle" : "mic-circle"}
                 size={75}
@@ -131,10 +128,13 @@ QuranControls.displayName = "QuranControls";
 
 const styles = StyleSheet.create({
   bottomControls: {
-    backgroundColor: theme.Tcolors.black,
+    backgroundColor: theme.Tcolors.secondaryBackground,
     paddingHorizontal: theme.Spacing.md,
     paddingVertical: theme.Spacing.sm,
     position: "relative",
+  },
+  darkPage: {
+    backgroundColor: theme.Tcolors.black,
   },
   controlsRow: {
     flexDirection: "row",

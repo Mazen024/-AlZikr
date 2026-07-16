@@ -13,7 +13,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { getBooks } from "../../service/hadithService";
+import {
+  initializeHadith,
+  initializeHadithBook,
+} from "../../service/appInitializer";
+import { getHadithsByBook } from "../../service/hadithServices";
+import DownloadConfirmModal from "../components/DownloadConfirmModal";
 import root from "../constants/root";
 
 const { width } = Dimensions.get("window");
@@ -43,6 +48,16 @@ const FAMOUS_HADITHS = [
   },
 ];
 
+function isBookDownloaded(bookId) {
+  try {
+    const hadiths = getHadithsByBook(bookId);
+    return Array.isArray(hadiths) && hadiths.length > 0;
+  } catch (err) {
+    console.log("❌ Error checking download status:", err);
+    return false;
+  }
+}
+
 function BookCard({ item, index, onPress }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const palette = BOOK_PALETTES[index % BOOK_PALETTES.length];
@@ -60,6 +75,13 @@ function BookCard({ item, index, onPress }) {
       useNativeDriver: true,
       speed: 20,
     }).start();
+
+  const formatDeathYear = (authorDeath) => {
+    if (!authorDeath) return "غير معروف";
+    if (authorDeath === "October 2, 1999") return "1420 هـ";
+    if (/^\d+$/.test(authorDeath)) return `${authorDeath} هـ`;
+    return authorDeath.replace("ھ", "هـ");
+  };
 
   return (
     <TouchableOpacity
@@ -83,28 +105,44 @@ function BookCard({ item, index, onPress }) {
           <View style={styles.bookTopLine} />
 
           <View style={styles.bookInner}>
-            <Text style={styles.bookIndexNum}>
-              {(index + 1).toLocaleString("ar")}
-            </Text>
+            <View style={styles.indexBadge}>
+              <Text style={styles.bookIndexNum}>
+                {(index + 1).toLocaleString("ar")}
+              </Text>
+            </View>
+
             <Text style={styles.bookTitleCard} numberOfLines={3}>
-              {item.title}
+              {item.name_ar || "....."}
             </Text>
+
+            <View style={styles.authorDivider} />
+
             <Text style={styles.bookAuthorCard} numberOfLines={1}>
-              {item.author}
+              {item.author_ar || "....."}
             </Text>
+
+            <View style={styles.metaGroup}>
+              <Text style={styles.bookAuthorDetailCard} numberOfLines={1}>
+                {item.birth === "تاريخ الميلاد غير معروف"
+                  ? "....."
+                  : item.birth}
+                {"  ·  "}
+                {formatDeathYear(item.author_death)}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.bookStats}>
             <View style={styles.statChip}>
               <Text style={styles.statVal}>
-                {item.hadithCount.toLocaleString("ar")}
+                {item.hadiths_count.toLocaleString("ar")}
               </Text>
               <Text style={styles.statKey}>حديث</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statChip}>
               <Text style={styles.statVal}>
-                {item.chapterCount.toLocaleString("ar")}
+                {item.chapters_count.toLocaleString("ar")}
               </Text>
               <Text style={styles.statKey}>باب</Text>
             </View>
@@ -117,10 +155,15 @@ function BookCard({ item, index, onPress }) {
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
 export default function HadithHome() {
   const [books, setBooks] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(null);
+  const [downloadError, setDownloadError] = useState(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(12)).current;
@@ -129,19 +172,21 @@ export default function HadithHome() {
   const router = useRouter();
 
   useEffect(() => {
-    loadBooks();
-    Animated.timing(headerFade, {
-      toValue: 1,
-      duration: 700,
-      useNativeDriver: true,
-    }).start();
-    animateVerse();
-  }, [animateVerse, headerFade]);
+    async function initializePage() {
+      const books = await initializeHadith();
+      setBooks(books);
 
-  const loadBooks = async () => {
-    const data = await getBooks();
-    setBooks(data);
-  };
+      Animated.timing(headerFade, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true,
+      }).start();
+
+      animateVerse();
+    }
+
+    initializePage();
+  }, [animateVerse, headerFade]);
 
   const animateVerse = useCallback(() => {
     fadeAnim.setValue(0);
@@ -169,11 +214,60 @@ export default function HadithHome() {
     return () => clearInterval(id);
   }, [animateVerse]);
 
-  const handleBookPress = (book) =>
-    router.push({
-      pathname: "/Hadith/HadithReader",
-      params: { bookId: book.id },
-    });
+  const goToReader = useCallback(
+    (bookId) => {
+      router.push({
+        pathname: "/Hadith/HadithReader",
+        params: { bookId },
+      });
+    },
+    [router],
+  );
+
+  const handleBookPress = useCallback(
+    (book) => {
+      if (isBookDownloaded(book.id)) {
+        goToReader(book.id);
+        return;
+      }
+
+      setSelectedBook(book);
+      setDownloadError(null);
+      setDownloadProgress(null);
+      setModalVisible(true);
+    },
+    [goToReader],
+  );
+
+  const handleCancelModal = useCallback(() => {
+    if (downloading) return;
+    setModalVisible(false);
+    setSelectedBook(null);
+  }, [downloading]);
+
+  const handleConfirmDownload = useCallback(async () => {
+    if (!selectedBook) return;
+
+    setDownloading(true);
+    setDownloadError(null);
+
+    try {
+      await initializeHadithBook(selectedBook.id, (progress) => {
+        setDownloadProgress(progress);
+      });
+
+      setDownloading(false);
+      setModalVisible(false);
+
+      const bookId = selectedBook.id;
+      setSelectedBook(null);
+      goToReader(bookId);
+    } catch (err) {
+      console.log("❌ Error downloading book:", err);
+      setDownloading(false);
+      setDownloadError("حدث خطأ أثناء تحميل الكتاب");
+    }
+  }, [selectedBook, goToReader]);
 
   const hadith = FAMOUS_HADITHS[currentIdx];
 
@@ -202,7 +296,8 @@ export default function HadithHome() {
               <View style={{ alignItems: "flex-end" }}>
                 <Text style={styles.headerTitle}>جامع كتب الأحاديث</Text>
                 <Text style={styles.headerSub}>
-                  {books.length.toLocaleString("ar")} كتاب · المكتبة النبوية
+                  {(books?.length ?? 0).toLocaleString("ar")} كتاب · المكتبة
+                  النبوية
                 </Text>
               </View>
               <View style={styles.iconCircle}>
@@ -271,11 +366,25 @@ export default function HadithHome() {
           scrollEnabled={false}
         />
       </ScrollView>
+
+      <DownloadConfirmModal
+        visible={modalVisible}
+        book={selectedBook}
+        downloading={downloading}
+        progress={downloadProgress}
+        onConfirm={handleConfirmDownload}
+        onCancel={handleCancelModal}
+      />
+
+      {!!downloadError && !modalVisible && (
+        <View style={styles.errorToast}>
+          <Text style={styles.errorToastText}>{downloadError}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -332,7 +441,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
 
-  // Hero
   heroWrap: { margin: 16, borderRadius: 20, overflow: "hidden" },
   hero: {
     padding: 15,
@@ -435,7 +543,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
 
-  // Book grid
   gridContent: { paddingHorizontal: 16, paddingBottom: 8 },
   gridRow: { justifyContent: "space-between", marginBottom: 12 },
 
@@ -476,31 +583,63 @@ const styles = StyleSheet.create({
     backgroundColor: root.Tcolors.borderBright,
     marginTop: 10,
   },
-
   bookInner: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
+  },
+
+  indexBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: `${root.Tcolors.goldDim}60`,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
   },
   bookIndexNum: {
-    fontSize: 11,
-    color: root.Tcolors.goldDim,
+    fontSize: 10,
+    color: root.Tcolors.goldLight,
     fontFamily: root.Fonts.cairoRegular,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
+
   bookTitleCard: {
     fontSize: 17,
     color: root.Tcolors.white,
     fontFamily: root.Fonts.amiriBold,
     textAlign: "center",
     lineHeight: 26,
+    letterSpacing: 0.3,
   },
+
+  authorDivider: {
+    width: 26,
+    height: 1,
+    backgroundColor: `${root.Tcolors.goldDim}55`,
+    marginVertical: 2,
+  },
+
   bookAuthorCard: {
-    fontSize: 11,
+    fontSize: 12,
     color: root.Tcolors.textSub,
     fontFamily: root.Fonts.amiriRegular,
     textAlign: "center",
+  },
+
+  metaGroup: {
+    gap: 2,
+    marginTop: 4,
+  },
+  bookAuthorDetailCard: {
+    fontSize: 9,
+    color: root.Tcolors.textSub,
+    fontFamily: root.Fonts.cairoRegular,
+    textAlign: "center",
+    opacity: 0.85,
   },
 
   bookStats: {

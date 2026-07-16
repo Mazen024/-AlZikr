@@ -1,10 +1,15 @@
-import { StatusBar } from "expo-status-bar";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+// import { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PrayerProvider } from "../context/PrayerContext";
-
+// import { resetDatabase } from "../service/database";
 
 export default function RootLayout() {
+  // useEffect(() => {
+  //   resetDatabase();
+  // }, []);
+
   return (
     <PrayerProvider>
       <SafeAreaView
@@ -14,10 +19,7 @@ export default function RootLayout() {
         }}
         edges={["top"]}
       >
-        <StatusBar
-          style="light"
-          backgroundColor="#111e2d"
-        />
+        <StatusBar style="light" backgroundColor="#111e2d" />
 
         <Stack
           screenOptions={{

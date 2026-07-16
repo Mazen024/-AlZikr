@@ -152,11 +152,10 @@ export function usePrayerNotifications(prayerTimes) {
       await cancelAll();
       await setEnabled(false);
     } else {
-      await setEnabled(true);
       scheduledRef.current = false;
-      await scheduleAll(prayerTimes);
+      await setEnabled(true);
     }
-  }, [enabled, cancelAll, scheduleAll, setEnabled, prayerTimes]);
+  }, [enabled, cancelAll, setEnabled]);
 
   useEffect(() => {
     if (

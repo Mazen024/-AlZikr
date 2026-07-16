@@ -4,9 +4,17 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import theme from "../constants/root";
 
 const QuranHeader = React.memo(
-  ({ currentPage, pageData, totalPages, bookmarked, onMenuPress, onSearchPress  }) => {
+  ({
+    currentPage,
+    pageData,
+    totalPages,
+    bookmarked,
+    onMenuPress,
+    onSearchPress,
+    isDark,
+  }) => {
     return (
-      <View style={styles.header}>
+      <View style={[styles.header, isDark && styles.darkPage]}>
         <TouchableOpacity onPress={onSearchPress} activeOpacity={0.7}>
           <Ionicons
             name={"search"}
@@ -27,7 +35,11 @@ const QuranHeader = React.memo(
         </View>
 
         <TouchableOpacity onPress={onMenuPress} activeOpacity={0.7}>
-          <Ionicons name={"menu"} size={30} color={theme.Tcolors.primaryLight} />
+          <Ionicons
+            name={"menu"}
+            size={30}
+            color={theme.Tcolors.primaryLight}
+          />
         </TouchableOpacity>
 
         {bookmarked && (
@@ -44,7 +56,7 @@ QuranHeader.displayName = "QuranHeader";
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: theme.Tcolors.black,
+    backgroundColor: theme.Tcolors.secondaryBackground,
     paddingVertical: theme.Spacing.sm,
     paddingHorizontal: theme.Spacing.md,
     flexDirection: "row",
@@ -53,6 +65,9 @@ const styles = StyleSheet.create({
     gap: theme.Spacing.xs,
     position: "relative",
     overflow: "visible",
+  },
+  darkPage: {
+    backgroundColor: theme.Tcolors.black,
   },
   headerRight: {
     flexDirection: "row",

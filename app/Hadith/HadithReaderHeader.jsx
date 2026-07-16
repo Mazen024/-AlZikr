@@ -13,153 +13,211 @@ import {
 } from "react-native";
 import theme from "../constants/root";
 
-const ChaptersModal = React.memo(({
-  visible,
-  onClose,
-  chapters,
-  currentChapterId,
-  onSelectChapter,
-  onJump,
-  totalHadiths,
-}) => {
-  const [jumpValue, setJumpValue] = useState("");
-  const [jumpError, setJumpError] = useState(false);
+const ChaptersModal = React.memo(
+  ({
+    visible,
+    onClose,
+    chapters,
+    currentChapterId,
+    onSelectChapter,
+    onJump,
+    totalHadiths,
+  }) => {
+    const [jumpValue, setJumpValue] = useState("");
+    const [jumpError, setJumpError] = useState(false);
 
-  const handleJump = useCallback(() => {
-    const num = parseInt(jumpValue);
-    if (!isNaN(num) && num >= 1 && num <= totalHadiths) {
-      onJump(num - 1);
-      onClose();
-      setJumpValue("");
-      setJumpError(false);
-    } else {
-      setJumpError(true);
-      setTimeout(() => setJumpError(false), 1200);
-    }
-  }, [jumpValue, totalHadiths, onJump, onClose]);
+    const handleJump = useCallback(() => {
+      const num = parseInt(jumpValue);
+      if (!isNaN(num) && num >= 1 && num <= totalHadiths) {
+        onJump(num - 1);
+        onClose();
+        setJumpValue("");
+        setJumpError(false);
+      } else {
+        setJumpError(true);
+        setTimeout(() => setJumpError(false), 1200);
+      }
+    }, [jumpValue, totalHadiths, onJump, onClose]);
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={modalStyles.overlay}
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={onClose}
       >
-        <TouchableOpacity style={modalStyles.backdrop} onPress={onClose} activeOpacity={1} />
-
-        <View style={modalStyles.sheet}>
-          {/* Handle */}
-          <View style={modalStyles.handleWrap}>
-            <View style={modalStyles.handle} />
-          </View>
-
-          {/* Sheet header */}
-          <View style={modalStyles.sheetHeader}>
-            <TouchableOpacity onPress={onClose} style={modalStyles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close" size={18} color="rgba(255,255,255,0.45)" />
-            </TouchableOpacity>
-            <View style={modalStyles.sheetTitleWrap}>
-              <View style={modalStyles.titleAccent} />
-              <Text style={modalStyles.sheetTitle}>فهرس الأبواب</Text>
-            </View>
-          </View>
-
-          {/* Jump to hadith */}
-          <View style={modalStyles.jumpSection}>
-            <Text style={modalStyles.jumpLabel}>الانتقال إلى حديث</Text>
-            <View style={[modalStyles.jumpRow, jumpError && modalStyles.jumpRowError]}>
-              <TouchableOpacity style={modalStyles.jumpBtn} onPress={handleJump} activeOpacity={0.8}>
-                <Ionicons name="arrow-back" size={14} color="#1a1a2e" style={{ marginLeft: 2 }} />
-                <Text style={modalStyles.jumpBtnText}>انتقل</Text>
-              </TouchableOpacity>
-              <TextInput
-                style={modalStyles.jumpInput}
-                placeholder={`رقم الحديث (١ – ${totalHadiths.toLocaleString("ar")})`}
-                placeholderTextColor="rgba(255,255,255,0.28)"
-                keyboardType="number-pad"
-                value={jumpValue}
-                onChangeText={(v) => { setJumpValue(v); setJumpError(false); }}
-                textAlign="right"
-                returnKeyType="go"
-                onSubmitEditing={handleJump}
-              />
-            </View>
-            {jumpError && (
-              <Text style={modalStyles.jumpErrorText}>
-                أدخل رقماً بين ١ و {totalHadiths.toLocaleString("ar")}
-              </Text>
-            )}
-          </View>
-
-          {/* Section divider */}
-          <View style={modalStyles.sectionLabel}>
-            <View style={modalStyles.sectionLine} />
-            <View style={modalStyles.sectionDiamond} />
-            <Text style={modalStyles.sectionLabelText}>الأبواب</Text>
-            <View style={modalStyles.sectionDiamond} />
-            <View style={modalStyles.sectionLine} />
-          </View>
-
-          {/* Chapter list */}
-          <FlatList
-            data={chapters}
-            keyExtractor={(c) => c?.id?.toString()}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 12 }}
-            renderItem={({ item }) => {
-              const isActive = item.id === currentChapterId;
-              return (
-                <TouchableOpacity
-                  style={[modalStyles.chapterItem, isActive && modalStyles.chapterItemActive]}
-                  onPress={() => { onSelectChapter(item); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  {isActive && <View style={modalStyles.activeAccentBar} />}
-
-                  <View style={[modalStyles.chapterBadge, isActive && modalStyles.chapterBadgeActive]}>
-                    <Text style={[modalStyles.chapterBadgeText, isActive && modalStyles.chapterBadgeTextActive]}>
-                      {item.id}
-                    </Text>
-                  </View>
-
-                  <View style={modalStyles.chapterItemBody}>
-                    <Text
-                      style={[modalStyles.chapterItemName, isActive && modalStyles.chapterItemNameActive]}
-                      numberOfLines={2}
-                    >
-                      {item.arabic || item.title}
-                    </Text>
-                    {item.hadithCount != null && item.id !== 0 && (
-                      <Text style={modalStyles.chapterItemCount}>
-                        {item.hadithCount.toLocaleString("ar")} حديث
-                      </Text>
-                    )}
-                  </View>
-
-                  {isActive && (
-                    <Ionicons name="checkmark-circle" size={16} color={theme.Tcolors.primaryLight} style={{ flexShrink: 0 }} />
-                  )}
-                </TouchableOpacity>
-              );
-            }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={modalStyles.overlay}
+        >
+          <TouchableOpacity
+            style={modalStyles.backdrop}
+            onPress={onClose}
+            activeOpacity={1}
           />
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-});
+
+          <View style={modalStyles.sheet}>
+            {/* Handle */}
+            <View style={modalStyles.handleWrap}>
+              <View style={modalStyles.handle} />
+            </View>
+
+            {/* Sheet header */}
+            <View style={modalStyles.sheetHeader}>
+              <TouchableOpacity
+                onPress={onClose}
+                style={modalStyles.closeBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name="close"
+                  size={18}
+                  color="rgba(255,255,255,0.45)"
+                />
+              </TouchableOpacity>
+              <View style={modalStyles.sheetTitleWrap}>
+                <View style={modalStyles.titleAccent} />
+                <Text style={modalStyles.sheetTitle}>فهرس الأبواب</Text>
+              </View>
+            </View>
+
+            {/* Jump to hadith */}
+            <View style={modalStyles.jumpSection}>
+              <Text style={modalStyles.jumpLabel}>الانتقال إلى حديث</Text>
+              <View
+                style={[
+                  modalStyles.jumpRow,
+                  jumpError && modalStyles.jumpRowError,
+                ]}
+              >
+                <TouchableOpacity
+                  style={modalStyles.jumpBtn}
+                  onPress={handleJump}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="arrow-back"
+                    size={14}
+                    color="#1a1a2e"
+                    style={{ marginLeft: 2 }}
+                  />
+                  <Text style={modalStyles.jumpBtnText}>انتقل</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={modalStyles.jumpInput}
+                  placeholder={`رقم الحديث (١ – ${totalHadiths.toLocaleString("ar")})`}
+                  placeholderTextColor="rgba(255,255,255,0.28)"
+                  keyboardType="number-pad"
+                  value={jumpValue}
+                  onChangeText={(v) => {
+                    setJumpValue(v);
+                    setJumpError(false);
+                  }}
+                  textAlign="right"
+                  returnKeyType="go"
+                  onSubmitEditing={handleJump}
+                />
+              </View>
+              {jumpError && (
+                <Text style={modalStyles.jumpErrorText}>
+                  أدخل رقماً بين ١ و {totalHadiths.toLocaleString("ar")}
+                </Text>
+              )}
+            </View>
+
+            {/* Section divider */}
+            <View style={modalStyles.sectionLabel}>
+              <View style={modalStyles.sectionLine} />
+              <View style={modalStyles.sectionDiamond} />
+              <Text style={modalStyles.sectionLabelText}>الأبواب</Text>
+              <View style={modalStyles.sectionDiamond} />
+              <View style={modalStyles.sectionLine} />
+            </View>
+
+            {/* Chapter list */}
+            <FlatList
+              data={chapters}
+              keyExtractor={(c) => c?.id?.toString()}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingBottom: 20,
+                paddingHorizontal: 12,
+              }}
+              renderItem={({ item }) => {
+                const isActive = item.id === currentChapterId;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      modalStyles.chapterItem,
+                      isActive && modalStyles.chapterItemActive,
+                    ]}
+                    onPress={() => {
+                      onSelectChapter(item);
+                      onClose();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    {isActive && <View style={modalStyles.activeAccentBar} />}
+
+                    <View
+                      style={[
+                        modalStyles.chapterBadge,
+                        isActive && modalStyles.chapterBadgeActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          modalStyles.chapterBadgeText,
+                          isActive && modalStyles.chapterBadgeTextActive,
+                        ]}
+                      >
+                        {item.chapter_number}
+                      </Text>
+                    </View>
+
+                    <View style={modalStyles.chapterItemBody}>
+                      <Text
+                        style={[
+                          modalStyles.chapterItemName,
+                          isActive && modalStyles.chapterItemNameActive,
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {item.heading_ar || item.arabic || "بدون عنوان"}
+                      </Text>
+                      {item.hadithCount != null && item.id !== 0 && (
+                        <Text style={modalStyles.chapterItemCount}>
+                          {item.hadithCount.toLocaleString("ar")} حديث
+                        </Text>
+                      )}
+                    </View>
+
+                    {isActive && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={16}
+                        color={theme.Tcolors.primaryLight}
+                        style={{ flexShrink: 0 }}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  },
+);
 ChaptersModal.displayName = "ChaptersModal";
 
 const HadithHeader = ({
   bookTitle,
   currentChapterTitle,
   currentIndex,
-  totalHadiths,
+  Hadiths,
   chapters,
   currentChapterId,
   lastChapterId,
@@ -168,39 +226,50 @@ const HadithHeader = ({
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
 
-  const progress = totalHadiths > 0 ? (currentIndex + 1) / totalHadiths : 0;
+  const progress = Hadiths.length > 0 ? (currentIndex + 1) / Hadiths.length : 0;
 
   return (
     <>
-      <TouchableOpacity
-        style={styles.header}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.82}
-      >
-        {/* Left: list icon */}
+      <View style={styles.header}>
         <View style={styles.iconBox}>
           <View style={styles.listLine} />
           <View style={styles.listLine} />
           <View style={[styles.listLine, { width: 9 }]} />
         </View>
 
-        {/* Center: text stack */}
         <View style={styles.textStack}>
-          <Text style={styles.bookLabel} numberOfLines={1}>{bookTitle}</Text>
-          <Text style={styles.chapterName} numberOfLines={1}>{currentChapterTitle}</Text>
-          <View style={styles.counterRow}>
-            <Text style={styles.counterText}>
-              {(currentIndex + 1).toLocaleString("ar")} / {totalHadiths.toLocaleString("ar")}
-            </Text>
-            <Text style={styles.counterSuffix}> حديث</Text>
+          <Text style={styles.bookLabel} numberOfLines={1}>
+            {bookTitle}
+          </Text>
+          <Text style={styles.chapterName} numberOfLines={1}>
+            {currentChapterTitle}
+          </Text>
+          <View style={styles.lowerhead}>
+            {Hadiths[currentIndex]?.section_heading_ar ? (
+              <Text style={styles.BabName}>
+                باب {Hadiths[currentIndex].section_heading_ar}
+              </Text>
+            ) : null}
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              activeOpacity={0.82}
+            >
+              <View style={styles.counterRow}>
+                <Text style={styles.counterText}>
+                  {(currentIndex + 1).toLocaleString("ar")} /{" "}
+                  {Hadiths.length.toLocaleString("ar")}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={14}
+                  color="rgba(255,255,255,0.35)"
+                />
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
+      </View>
 
-        {/* Right: chevron */}
-        <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.35)" />
-      </TouchableOpacity>
-
-      {/* Progress bar */}
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
       </View>
@@ -213,7 +282,7 @@ const HadithHeader = ({
         lastChapterId={lastChapterId}
         onSelectChapter={onSelectChapter}
         onJump={onJump}
-        totalHadiths={totalHadiths}
+        totalHadiths={Hadiths.length}
       />
     </>
   );
@@ -259,7 +328,7 @@ const styles = StyleSheet.create({
   bookLabel: {
     fontSize: 10,
     fontFamily: theme.Fonts.amiriRegular,
-    color: "rgba(255,255,255,0.35)",
+    color: theme.Tcolors.ACCENT,
     letterSpacing: 0.4,
   },
   chapterName: {
@@ -268,21 +337,30 @@ const styles = StyleSheet.create({
     color: "#e8d9b8",
     marginTop: 1,
   },
-  counterRow: {
+  lowerhead: {
     flexDirection: "row-reverse",
-    alignItems: "baseline",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+  },
+  BabName: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: theme.Fonts.amiriBold,
+    color: theme.Tcolors.secondaryText,
+    marginTop: 1,
+    textAlign: "right",
+    marginLeft: 10,
+  },
+  counterRow: {
+    alignItems: "center",
     marginTop: 2,
+    flexShrink: 0,
   },
   counterText: {
     fontSize: 12,
     fontFamily: theme.Fonts.amiriBold,
     color: theme.Tcolors.accentGreen,
-  },
-  counterSuffix: {
-    fontSize: 11,
-    fontFamily: theme.Fonts.amiriRegular,
-    color: `${theme.Tcolors.accentGreen}99`,
-    marginRight: 2,
   },
 
   /* progress */
@@ -297,7 +375,8 @@ const styles = StyleSheet.create({
   },
 });
 
-const { height: SCREEN_HEIGHT } = require("react-native").Dimensions.get("window");
+const { height: SCREEN_HEIGHT } =
+  require("react-native").Dimensions.get("window");
 
 const modalStyles = StyleSheet.create({
   overlay: {

@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
@@ -8,46 +9,72 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import quranData from "../../assets/quran/quran copy.json";
 import theme from "../constants/root";
+import getDb from "../db/database";
 
 const removeTashkeel = (text) =>
   text
     ?.replace(
       /[\u064B-\u065F\u0670\u0610-\u061A\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g,
       "",
-    ) // إزالة التشكيل
-    .replace(/ـ/g, "") // إزالة التطويل
-    .replace(/[أإآٱ]/g, "ا") // توحيد الألف
-    .replace(/ى/g, "ي") // توحيد الألف المقصورة
+    )
+    .replace(/ـ/g, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ى/g, "ي")
     .replace(/\s+/g, " ")
     .trim() ?? "";
 
-
-const SEARCH_INDEX = (() => {
-  const index = [];
-  for (const surah of quranData.data.surahs) {
-    for (const ayah of surah.ayahs) {
-      index.push({
-        surahName: surah.name,
-        ayahNumber: ayah.numberInSurah,
-        globalNumber: ayah.number,
-        text: ayah.text,
-        normalizedText: removeTashkeel(ayah.text),
-        page: ayah.page, // 1-based Quran page
-      });
-    }
-  }
-  return index;
-})();
+const MAX_RESULTS = 100;
 
 export default function QuranSearch({ onClose, onSelect }) {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef(null);
 
-  const results = useMemo(() => {
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
     const q = removeTashkeel(query.trim());
-    if (!q || q.length < 2) return [];
-    return SEARCH_INDEX.filter((item) => item.normalizedText.includes(q));
+    if (!q || q.length < 2) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const db = await getDb();
+        const rows = await db.getAllAsync(
+          `SELECT
+             ayahs.id AS globalNumber,
+             ayahs.ayah_number AS ayahNumber,
+             ayahs.text AS text,
+             ayahs.page AS page,
+             surahs.name AS surahName
+           FROM ayahs
+           JOIN surahs ON surahs.id = ayahs.surah_id
+           ORDER BY ayahs.id ASC`,
+        );
+
+        const matches = [];
+        for (const row of rows) {
+          if (removeTashkeel(row.text).includes(q)) {
+            matches.push(row);
+            if (matches.length >= MAX_RESULTS) break;
+          }
+        }
+        setResults(matches);
+      } catch (e) {
+        console.error("Search error:", e);
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(debounceRef.current);
   }, [query]);
 
   const handleSelect = useCallback(
@@ -102,24 +129,36 @@ export default function QuranSearch({ onClose, onSelect }) {
 
       {query.length >= 2 && (
         <Text style={styles.countText}>
-          {results.length === 0 ? "لا توجد نتائج" : `${results.length} نتيجة`}
+          {searching
+            ? "جارِ البحث..."
+            : results.length === 0
+              ? "لا توجد نتائج"
+              : `${results.length} نتيجة`}
         </Text>
       )}
 
-      <FlatList
-        data={results}
-        keyExtractor={(item) => item.globalNumber.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          query.length >= 2 ? null : (
-            <Text style={styles.emptyText}>
-              ابدأ الكتابة للبحث في آيات القرآن
-            </Text>
-          )
-        }
-      />
+      {searching && results.length === 0 ? (
+        <ActivityIndicator
+          size="small"
+          color={theme.Tcolors.white}
+          style={{ marginTop: 20 }}
+        />
+      ) : (
+        <FlatList
+          data={results}
+          keyExtractor={(item) => item.globalNumber.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            query.length >= 2 ? null : (
+              <Text style={styles.emptyText}>
+                ابدأ الكتابة للبحث في آيات القرآن
+              </Text>
+            )
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -1,5 +1,167 @@
-import { Dimensions, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef } from "react";
+import {
+  Animated,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import root from "../constants/root.jsx";
 const { width } = Dimensions.get("window");
+
+const { Fonts, FontSizes, Spacing, BorderRadius, Tcolors } = root;
+
+export function ErrorBanner({ error, onDismiss, onRetry }) {
+  const translateY = useRef(new Animated.Value(-80)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (error) {
+      Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: 0,
+          tension: 70,
+          friction: 12,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: -80,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [error, translateY, opacity]);
+
+  if (!error) return null;
+
+  const isLocation =
+    error.toLowerCase().includes("location") ||
+    error.toLowerCase().includes("permission");
+  const isNetwork =
+    error.toLowerCase().includes("network") ||
+    error.toLowerCase().includes("fetch") ||
+    error.toLowerCase().includes("failed");
+
+  const icon = isLocation
+    ? "location-outline"
+    : isNetwork
+      ? "wifi-outline"
+      : "alert-circle-outline";
+
+  const message = isLocation
+    ? "تعذّر الوصول إلى الموقع"
+    : isNetwork
+      ? "لا يوجد اتصال بالإنترنت"
+      : "حدث خطأ غير متوقع";
+
+  const sub = isLocation
+    ? "سيتم عرض آخر مواقيت الصلاة المحفوظة."
+    : isNetwork
+      ? "سيتم عرض آخر مواقيت الصلاة المحفوظة."
+      : "اسحب لأسفل لإعادة المحاولة.";
+
+  return (
+    <Animated.View
+      style={[styles.banner, { transform: [{ translateY }], opacity }]}
+      pointerEvents="box-none"
+    >
+      <View style={styles.bannerInner}>
+        <View style={styles.bannerIconWrap}>
+          <Ionicons name={icon} size={18} color={Tcolors.recordingRed} />
+        </View>
+
+        <View style={styles.bannerText}>
+          <Text style={styles.bannerTitle}>{message}</Text>
+          <Text style={styles.bannerSub} numberOfLines={1}>
+            {sub}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.bannerClose}
+          onPress={onDismiss}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="close" size={16} color={Tcolors.secondaryText} />
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  banner: {
+    position: "absolute",
+    top: 90,
+    left: Spacing.xl,
+    right: Spacing.xl,
+    width: "80%",
+    zIndex: 99,
+  },
+  bannerInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0c1520",
+    borderWidth: 1,
+    borderColor: "rgba(245, 23, 11, 0.35)",
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  bannerIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: "rgba(245, 85, 11, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.sm,
+    flexShrink: 0,
+  },
+  bannerText: {
+    flex: 1,
+    alignItems: "center",
+  },
+  bannerTitle: {
+    fontFamily: Fonts.cairoBold,
+    fontSize: FontSizes.small + 1,
+    color: Tcolors.recordingRed,
+    textAlign: "right",
+  },
+  bannerSub: {
+    fontFamily: Fonts.cairoRegular,
+    fontSize: FontSizes.small - 1,
+    color: Tcolors.secondaryText,
+    marginTop: 2,
+    textAlign: "right",
+  },
+  bannerClose: {
+    padding: 2,
+    flexShrink: 0,
+  },
+});
 
 export const PRAYERS = [
   {

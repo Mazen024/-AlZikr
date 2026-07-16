@@ -1,21 +1,15 @@
 import { useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { initializeHadithBook } from "../../service/appInitializer";
+import { getBookById } from "../../service/bookService";
+import { getChaptersByBook } from "../../service/chapterService";
 import {
-  ActivityIndicator,
-  Dimensions,
-  StyleSheet,
-  View,
-} from "react-native";
-import {
-  ALL_BOOKS,
-  getBookById,
-  getChaptersByBook,
   getHadithsByBook,
-  getLastChapter,
-  getLastHadithIndex,
-  saveLastChapter,
-  saveLastHadithIndex,
-} from "../../service/hadithService";
+  getLastReading,
+  saveLastReading,
+} from "../../service/hadithServices";
+import SyncProgressView from "../components/SyncProgressView";
 import theme from "../constants/root";
 import HadithHeader from "./HadithReaderHeader";
 import HadithMain from "./HadithReaderMain";
@@ -29,123 +23,183 @@ const CONTENT_HEIGHT = height - HEADER_HEIGHT - DIVIDER_HEIGHT;
 const UPPER_HEIGHT = CONTENT_HEIGHT * 0.6;
 const LOWER_HEIGHT = CONTENT_HEIGHT * 0.4;
 
+const DEFAULT_TAB = "info";
+
 const HadithReader = () => {
-  const { bookId } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const rawBookId = Array.isArray(params.bookId)
+    ? params.bookId[0]
+    : params.bookId;
+  const bookId = Number(rawBookId);
 
   const [bookTitle, setBookTitle] = useState("");
   const [hadiths, setHadiths] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentChapterTitle, setCurrentChapterTitle] = useState("");
   const [currentChapterId, setCurrentChapterId] = useState(null);
   const [lastChapterId, setLastChapterId] = useState(null);
-  const [activeTab, setActiveTab] = useState("header not complete");
+  const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
+  const [syncProgress, setSyncProgress] = useState(null);
 
   const flatListRef = useRef(null);
   const bookIdRef = useRef(bookId);
+  const chaptersRef = useRef(chapters);
+  const hadithsRef = useRef(hadiths);
 
   useEffect(() => {
     bookIdRef.current = bookId;
   }, [bookId]);
 
   useEffect(() => {
+    chaptersRef.current = chapters;
+  }, [chapters]);
+
+  useEffect(() => {
+    hadithsRef.current = hadiths;
+  }, [hadiths]);
+
+  useEffect(() => {
+    if (!bookId || Number.isNaN(bookId)) {
+      setError("رقم الكتاب غير صالح");
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     const load = async () => {
+      setLoading(true);
+      setError(null);
+      setSyncProgress(null);
+
       try {
-        setLoading(true);
-        const parsedBookId = parseInt(bookId);
+        await initializeHadithBook(bookId, (progress) => {
+          if (!cancelled) setSyncProgress(progress);
+        });
 
-        const [data, book, chaptersData, lastCh] = await Promise.all([
-          getHadithsByBook(parsedBookId),
-          getBookById(parsedBookId),
-          getChaptersByBook(parsedBookId),
-          getLastChapter(parsedBookId),
-        ]);
+        if (cancelled) return;
 
-        const hadithList = data || [];
-        const chapterList = chaptersData || [];
+        const book = getBookById(bookId);
+        const bookChapters = getChaptersByBook(bookId);
+        const bookHadiths = getHadithsByBook(bookId);
 
-        setHadiths(hadithList);
-        setChapters(chapterList);
-        if (book?.title) setBookTitle(book.title);
+        if (cancelled) return;
 
-        const bookData = ALL_BOOKS[parsedBookId - 1];
-        const resolvedLastChapterId = lastCh ?? hadithList[0]?.chapter_id;
-        setLastChapterId(resolvedLastChapterId);
+        setBookTitle(book?.name_ar ?? book?.name_en ?? "");
+        setChapters(bookChapters);
+        setHadiths(bookHadiths);
 
-        const savedIndex = await getLastHadithIndex(parsedBookId, resolvedLastChapterId);
-        const targetIndex =
-          savedIndex ?? hadithList.findIndex((h) => h.chapter_id === resolvedLastChapterId);
+        const last = getLastReading(bookId);
+        if (last) {
+          setLastChapterId(last.chapter_id);
+          const resumeIndex = Math.max(
+            0,
+            Math.min(last.hadith_index ?? 0, bookHadiths.length - 1),
+          );
+          setCurrentIndex(resumeIndex);
 
-        const initialChapter = bookData?.chapters?.find((c) => c.id === resolvedLastChapterId);
-        if (initialChapter?.arabic) {
-          setCurrentChapterTitle(initialChapter.arabic);
-          setCurrentChapterId(resolvedLastChapterId);
+          const resumeChapter = bookChapters.find(
+            (c) => c.id === last.chapter_id,
+          );
+          setCurrentChapterId(resumeChapter?.id ?? null);
+          setCurrentChapterTitle(resumeChapter?.heading_ar ?? "");
+
+          requestAnimationFrame(() => {
+            if (!cancelled && resumeIndex > 0) {
+              flatListRef.current?.scrollToIndex({
+                index: resumeIndex,
+                animated: false,
+              });
+            }
+          });
+        } else if (bookChapters.length > 0) {
+          setCurrentChapterId(bookChapters[0].id);
+          setCurrentChapterTitle(bookChapters[0].heading_ar ?? "");
         }
-
-        const safeIndex = targetIndex > -1 ? targetIndex : 0;
-        setCurrentIndex(safeIndex);
-
-        setTimeout(() => {
-          if (hadithList.length > 0 && safeIndex > 0) {
-            flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
-          }
-        }, 150);
-      } catch (e) {
-        console.log("Error loading hadiths:", e);
+      } catch (err) {
+        if (!cancelled) {
+          console.log("❌ Error loading hadith book:", err);
+          setError("حدث خطأ أثناء تحميل الكتاب");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+
     load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [bookId]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length === 0) return;
-    const idx = viewableItems[0].index ?? 0;
-    const currentHadith = viewableItems[0].item;
-    setCurrentIndex(idx);
+    if (!viewableItems?.length) return;
 
-    const realChapterId = currentHadith.chapter_id;
-    const parsedBookId = parseInt(bookIdRef.current);
-    const book = ALL_BOOKS[parsedBookId - 1];
-    const chapter = book?.chapters?.find((c) => c.id === realChapterId);
-    if (chapter?.arabic) {
-      setCurrentChapterTitle(chapter.arabic);
-      setCurrentChapterId(realChapterId);
+    const top = viewableItems[0];
+    const index = top.index ?? 0;
+    const hadith = top.item;
+
+    setCurrentIndex(index);
+
+    const chapter = chaptersRef.current.find(
+      (c) => c.id === hadith?.chapter_id,
+    );
+    if (chapter) {
+      setCurrentChapterId(chapter.id);
+      setCurrentChapterTitle(chapter.heading_ar ?? "");
     }
 
-    saveLastHadithIndex(parsedBookId, realChapterId, idx);
-    saveLastChapter(parsedBookId, realChapterId);
+    if (hadith) {
+      saveLastReading(bookIdRef.current, hadith.chapter_id, index);
+    }
   }).current;
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 51 }).current;
 
-  const handleSelectChapter = useCallback(
-    (chapter) => {
-      const idx = hadiths.findIndex((h) => h.chapter_id === chapter.id);
-      if (idx > -1) {
-        flatListRef.current?.scrollToIndex({ index: idx, animated: true });
-      }
-    },
-    [hadiths],
-  );
+  const handleSelectChapter = useCallback((chapter) => {
+    const idx = hadithsRef.current.findIndex(
+      (h) => h.chapter_id === chapter.id,
+    );
+    if (idx > -1) {
+      flatListRef.current?.scrollToIndex({ index: idx, animated: true });
+    }
+  }, []);
 
-  const handleJumpToHadith = useCallback(
-    (index) => {
-      const safeIndex = Math.max(0, Math.min(index, hadiths.length - 1));
-      flatListRef.current?.scrollToIndex({ index: safeIndex, animated: true });
-    },
-    [hadiths.length],
-  );
+  const handleJumpToHadith = useCallback((index) => {
+    const safeIndex = Math.max(
+      0,
+      Math.min(index, hadithsRef.current.length - 1),
+    );
+    flatListRef.current?.scrollToIndex({ index: safeIndex, animated: true });
+  }, []);
 
-  const bookData = ALL_BOOKS[parseInt(bookId) - 1];
-  const resolvedChapters = chapters.length > 0 ? chapters : (bookData?.chapters || []);
+  const handleScrollToIndexFailed = useCallback((info) => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToIndex({
+        index: info.index,
+        animated: false,
+      });
+    }, 100);
+  }, []);
+
+  const resolvedChapters = useMemo(() => chapters, [chapters]);
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={theme.Tcolors.primaryLight} />
+        <SyncProgressView progress={syncProgress} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.syncText}>{error}</Text>
       </View>
     );
   }
@@ -156,7 +210,7 @@ const HadithReader = () => {
         bookTitle={bookTitle}
         currentChapterTitle={currentChapterTitle}
         currentIndex={currentIndex}
-        totalHadiths={hadiths.length}
+        Hadiths={hadiths}
         chapters={resolvedChapters}
         currentChapterId={currentChapterId}
         lastChapterId={lastChapterId}
@@ -170,6 +224,7 @@ const HadithReader = () => {
         flatListRef={flatListRef}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        onScrollToIndexFailed={handleScrollToIndexFailed}
       />
 
       <View style={styles.divider} />
@@ -194,10 +249,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: theme.Tcolors.quranbackground,
+    backgroundColor: theme.Tcolors.primaryBackground,
   },
   divider: {
     height: DIVIDER_HEIGHT,
     backgroundColor: theme.Tcolors.primaryLight,
+  },
+  syncText: {
+    marginTop: 12,
+    fontSize: 13,
+    fontFamily: theme.Fonts.amiriRegular,
+    color: "#b8e8c9",
   },
 });

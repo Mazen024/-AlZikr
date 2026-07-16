@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef } from "react";
 import {
@@ -21,15 +22,28 @@ import StarField from "../constants/homeConstants";
 import root from "../constants/root";
 
 const PRAYER_META = {
-  Fajr: { label: "Dawn prayer", icon: "☽", arabic: "الفجر" },
-  Sunrise: { label: "Shuruq", icon: "◎", arabic: "الشروق" },
-  Dhuhr: { label: "Midday prayer", icon: "☀", arabic: "الظهر" },
-  Asr: { label: "Afternoon prayer", icon: "◑", arabic: "العصر" },
-  Maghrib: { label: "Sunset prayer", icon: "◐", arabic: "المغرب" },
-  Isha: { label: "Night prayer", icon: "★", arabic: "العشاء" },
+  Fajr: { arabic: "الفجر", icon: "moon-outline" },
+  Sunrise: { arabic: "الشروق", icon: "sunny-outline" },
+  Dhuhr: { arabic: "الظهر", icon: "sunny" },
+  Asr: { arabic: "العصر", icon: "partly-sunny-outline" },
+  Maghrib: { arabic: "المغرب", icon: "sunny-outline" },
+  Isha: { arabic: "العشاء", icon: "moon" },
+  Midnight: { arabic: "منتصف الليل", icon: "moon-outline" },
+  Firstthird: { arabic: "الثلث الأول", icon: "time-outline" },
+  Lastthird: { arabic: "الثلث الأخير", icon: "time" },
 };
 
-const PRAYERS = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+const PRAYERS = [
+  { key: "Fajr", label: "الفجر" },
+  { key: "Sunrise", label: "الشروق" },
+  { key: "Dhuhr", label: "الظهر" },
+  { key: "Asr", label: "العصر" },
+  { key: "Maghrib", label: "المغرب" },
+  { key: "Isha", label: "العشاء" },
+  { key: "Midnight", label: "منتصف الليل" },
+  { key: "Firstthird", label: "الثلث الأول" },
+  { key: "Lastthird", label: "الثلث الأخير" },
+];
 
 function PrayerRow({ name, time, isNext, index, isTomorrow }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -63,19 +77,17 @@ function PrayerRow({ name, time, isNext, index, isTomorrow }) {
     >
       {isNext && <View style={styles.activeBar} />}
       <View style={[styles.iconBox, isNext && styles.iconBoxActive]}>
-        <Text
+        <Ionicons
           style={[styles.iconText, isNext && { color: root.Tcolors.ACCENT }]}
-        >
-          {meta.icon}
-        </Text>
+          name={meta.icon}
+        />
       </View>
       <View style={styles.prayerInfo}>
         <Text
           style={[styles.prayerName, isNext && { color: root.Tcolors.ACCENT }]}
         >
-          {name}
+          {meta.arabic}
         </Text>
-        <Text style={styles.prayerSub}>{meta.label}</Text>
       </View>
       <View style={styles.prayerRight}>
         <Text
@@ -144,6 +156,10 @@ export default function PrayTimes() {
     day: "numeric",
   });
 
+  const nextPrayerInfo = PRAYERS.find(
+    (prayer) => prayer.key === nextPrayer?.name,
+  );
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" />
@@ -178,15 +194,20 @@ export default function PrayTimes() {
             {isStale && (
               <View style={styles.staleBanner}>
                 <Text style={styles.staleText}>
-                  ⚠ Offline — showing last saved prayer times, may be outdated
+                  ⚠️ لا يمكن تحديث مواقيت الصلاة حاليًا. يتم عرض آخر البيانات
+                  المحفوظة.
                 </Text>
               </View>
             )}
 
             {nextPrayer && (
               <View style={styles.nextBlock}>
-                <Text style={styles.nextLabel}>NEXT PRAYER</Text>
-                <Text style={styles.nextName}>{nextPrayer.name}</Text>
+                <View style={styles.nextPray}>
+                  <Text style={styles.nextLabel}>الصلاة القادمة</Text>
+                  <Text style={styles.nextName}>
+                    {nextPrayerInfo?.label || nextPrayer.name}
+                  </Text>
+                </View>
                 <Text style={styles.nextTime}>
                   {formatTo12(nextPrayer.time)} ·{" "}
                   {getCountdown(nextPrayer.time, nextPrayer.isTomorrow)}
@@ -206,14 +227,14 @@ export default function PrayTimes() {
 
         <View style={styles.list}>
           {PRAYERS.map((name, i) => (
-            <React.Fragment key={name}>
+            <React.Fragment key={name.key}>
               <PrayerRow
-                name={name}
-                time={prayerTimes?.[name]}
-                isNext={nextPrayer?.name === name}
+                name={name.key}
+                time={prayerTimes?.[name.key]}
+                isNext={nextPrayer?.name === name.key}
                 index={i}
                 isTomorrow={
-                  nextPrayer?.name === name ? nextPrayer.isTomorrow : false
+                  nextPrayer?.name === name.key ? nextPrayer.isTomorrow : false
                 }
               />
               {i < PRAYERS.length - 1 && <View style={styles.separator} />}
@@ -302,15 +323,18 @@ const styles = StyleSheet.create({
   },
 
   nextBlock: {},
+  nextPray: {
+    direction: "rtl"
+  },
   nextLabel: {
-    fontSize: 10,
+    fontSize: 14,
     letterSpacing: 1.2,
     color: "rgba(255,255,255,0.38)",
     marginBottom: 2,
   },
   nextName: {
-    fontSize: 38,
-    fontWeight: "300",
+    fontSize: 40,
+    fontWeight: "bold",
     color: "#fff",
     letterSpacing: -1,
     lineHeight: 44,
@@ -339,18 +363,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.44,
   },
 
-  list: { backgroundColor: root.Tcolors.BG_DARK, paddingTop: 12 },
+  list: { backgroundColor: root.Tcolors.BG_DARK, paddingTop: 8 },
   prayerRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 13,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
     position: "relative",
+    direction: "rtl",
   },
   prayerRowActive: { backgroundColor: "rgba(78,202,139,0.06)" },
   activeBar: {
     position: "absolute",
-    left: 0,
     top: 0,
     bottom: 0,
     width: 2,
@@ -365,19 +389,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 14,
+    marginLeft: 12,
   },
   iconBoxActive: { backgroundColor: "rgba(78,202,139,0.1)" },
   iconText: { fontSize: 16, color: "rgba(255,255,255,0.35)" },
   prayerInfo: { flex: 1 },
   prayerName: {
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 18,
+    fontWeight: "bold",
     color: "rgba(255,255,255,0.82)",
     marginBottom: 2,
   },
-  prayerSub: { fontSize: 11, color: "rgba(255,255,255,0.28)" },
-  prayerRight: { alignItems: "flex-end" },
+  prayerRight: { alignItems: "center" },
   prayerTime: {
     fontSize: 15,
     fontWeight: "500",

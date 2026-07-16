@@ -23,7 +23,10 @@
     "android": {
       "versionCode": 1,
       "package": "com.mazen.alzikr",
-      "permissions": ["INTERNET", "INTERNET"],
+      "permissions": [
+        "INTERNET",
+        "INTERNET"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#F8F1E4"
@@ -53,7 +56,8 @@
         }
       ],
       "expo-asset",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

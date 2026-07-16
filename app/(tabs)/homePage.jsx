@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -7,6 +6,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -17,13 +17,13 @@ import {
 import { usePrayerContext } from "../../context/PrayerContext.jsx";
 import { formatTo12, getCountdown } from "../../hooks/usePrayerTimes";
 import {
+  ErrorBanner,
   FEATURES,
   getGreeting,
   getHijriDate,
   PRAYERS,
 } from "../constants/homeConstants";
 import root from "../constants/root.jsx";
-
 const { Fonts, FontSizes, Spacing, BorderRadius, Tcolors } = root;
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -77,8 +77,10 @@ const HomePage = () => {
   const router = useRouter();
   const [hijriDate, setHijriDate] = useState(getHijriDate());
   const [greeting, setGreeting] = useState(getGreeting());
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const heroAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
   const {
     prayerTimes,
     nextPrayer,
@@ -89,6 +91,18 @@ const HomePage = () => {
     retry,
   } = usePrayerContext();
 
+  const current = nextPrayer?.name;
+
+  const isDayTime = ["Sunrise", "Dhuhr", "Asr"].includes(current);
+
+  const heroBackground = isDayTime
+    ? require("../../assets/images/praymorning.png")
+    : require("../../assets/images/praynight.png");
+
+  useEffect(() => {
+    if (error) setBannerDismissed(false);
+  }, [error]);
+
   useEffect(() => {
     const update = () => {
       setGreeting(getGreeting());
@@ -96,6 +110,7 @@ const HomePage = () => {
     };
     update();
     const iv = setInterval(update, 60_000);
+
     Animated.timing(heroAnim, {
       toValue: 1,
       duration: 600,
@@ -124,31 +139,16 @@ const HomePage = () => {
     (prayer) => prayer.key === nextPrayer?.name,
   );
 
-  if (loading)
+  if (loading && !prayerTimes) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Tcolors.ACCENT} />
         <Text style={styles.loadingText}>Locating you…</Text>
       </View>
     );
+  }
 
-  if (error)
-    return (
-      <View style={styles.center}>
-        <View style={styles.errorIconWrap}>
-          <Ionicons name="alert-circle-outline" size={36} color="#e05c5c" />
-        </View>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryBtn}
-          onPress={retry}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="refresh" size={16} color={Tcolors.ACCENT} />
-          <Text style={styles.retryText}>Try again</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  const showBanner = !!error && !bannerDismissed;
 
   return (
     <View style={styles.root}>
@@ -172,6 +172,15 @@ const HomePage = () => {
         </TouchableOpacity>
       </View>
 
+      <ErrorBanner
+        error={showBanner ? error : null}
+        onDismiss={() => setBannerDismissed(true)}
+        onRetry={() => {
+          setBannerDismissed(true);
+          retry();
+        }}
+      />
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -185,53 +194,67 @@ const HomePage = () => {
         }
       >
         <Animated.View style={{ opacity: heroAnim }}>
-          <LinearGradient
-            colors={[Tcolors.heroGradientStart, Tcolors.heroGradientEnd]}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
+          <ImageBackground
+            source={heroBackground}
+            resizeMode="cover"
+            imageStyle={styles.heroImage}
             style={styles.hero}
           >
-            <View style={styles.heroTopRow}>
-              <View style={styles.livePill}>
-                <Animated.View
-                  style={[
-                    styles.liveDot,
-                    { transform: [{ scale: pulseAnim }] },
-                  ]}
-                />
-                <Text style={styles.livePillText}>الصلاة القادمة</Text>
-              </View>
-            </View>
-
-            {nextPrayer && (
-              <View style={styles.nextRow}>
-                <View>
-                  <Text style={styles.nextName}>
-                    {nextPrayerInfo?.arabic || nextPrayer.name}
-                  </Text>
-                  <Text style={styles.nextTime}>
-                    {formatTo12(nextPrayer.time)}
-                  </Text>
+            <View style={styles.heroContent}>
+              <View style={styles.heroTopRow}>
+                <View style={styles.livePill}>
+                  <Animated.View
+                    style={[
+                      styles.liveDot,
+                      { transform: [{ scale: pulseAnim }] },
+                    ]}
+                  />
+                  <Text style={styles.livePillText}>الصلاة القادمة</Text>
                 </View>
-                <View style={styles.countdownChip}>
+              </View>
+
+              {nextPrayer && (
+                <View style={styles.nextRow}>
+                  <View>
+                    <Text style={styles.nextName}>
+                      {nextPrayerInfo?.arabic || nextPrayer.name}
+                    </Text>
+                    <Text style={styles.nextTime}>
+                      {formatTo12(nextPrayer.time)}
+                    </Text>
+                  </View>
+                  <View style={styles.countdownChip}>
+                    <Ionicons
+                      name="time-outline"
+                      size={14}
+                      color={Tcolors.primaryLight}
+                    />
+                    <Text style={styles.remaining}>
+                      {getCountdown(nextPrayer.time, nextPrayer.isTomorrow)}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {!nextPrayer && (
+                <View style={styles.heroPlaceholder}>
                   <Ionicons
                     name="time-outline"
-                    size={14}
-                    color={Tcolors.primaryLight}
+                    size={28}
+                    color="rgba(255,255,255,0.2)"
                   />
-                  <Text style={styles.remaining}>
-                    {getCountdown(nextPrayer.time, nextPrayer.isTomorrow)}
+                  <Text style={styles.heroPlaceholderText}>
+                    أوقات الصلاة غير متاحة
                   </Text>
                 </View>
-              </View>
-            )}
+              )}
 
-            <View style={styles.verseDivider} />
-
-            <Text style={styles.verseArabic}>
-              وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُدَّكِرٍ
-            </Text>
-          </LinearGradient>
+              <View style={styles.verseDivider} />
+              <Text style={styles.verseArabic}>
+                وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُدَّكِرٍ
+              </Text>
+            </View>
+          </ImageBackground>
         </Animated.View>
 
         <Animated.View style={{ opacity: heroAnim }}>
@@ -265,7 +288,9 @@ const HomePage = () => {
                         isActive && styles.prayerItemActive,
                       ]}
                     >
-                      {formatTo12(prayerTimes?.[prayer.key])}
+                      {prayerTimes
+                        ? formatTo12(prayerTimes[prayer.key])
+                        : "––:––"}
                     </Text>
                   </View>
                 </React.Fragment>
@@ -291,6 +316,8 @@ const HomePage = () => {
     </View>
   );
 };
+
+export default HomePage;
 
 const styles = StyleSheet.create({
   root: {
@@ -393,11 +420,21 @@ const styles = StyleSheet.create({
   hero: {
     marginHorizontal: Spacing.md,
     marginTop: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
     borderRadius: BorderRadius.lg,
     overflow: "hidden",
+    height: 230,
+  },
+
+  heroContent: {
+    flex: 1,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+  },
+
+  heroImage: {
+    height: "100%",
+    width: "100%",
   },
 
   heroTopRow: {
@@ -479,13 +516,6 @@ const styles = StyleSheet.create({
     lineHeight: Spacing.xl,
   },
 
-  prayerScrollRow: {
-    flexDirection: "row-reverse",
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    gap: Spacing.sm,
-  },
-
   section: {
     marginTop: Spacing.lg,
     paddingHorizontal: Spacing.md,
@@ -561,6 +591,14 @@ const styles = StyleSheet.create({
   prayerItemActive: {
     color: Tcolors.primaryLight,
   },
+  heroPlaceholder: {
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    gap: Spacing.xs,
+  },
+  heroPlaceholderText: {
+    fontFamily: Fonts.cairoRegular,
+    fontSize: FontSizes.small,
+    color: "rgba(255,255,255,0.25)",
+  },
 });
-
-export default HomePage;

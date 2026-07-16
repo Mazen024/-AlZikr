@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   FlatList,
   Image,
@@ -12,26 +13,38 @@ import {
 } from "react-native";
 import madinah from "../../assets/images/madinah.png";
 import kaaba from "../../assets/images/makkah-kaaba.png";
-import quran from "../../assets/quran/quran copy.json";
 import theme from "../constants/root";
+import getDb from "../db/database";
 
 const removeTashkeel = (text) =>
   text
     ?.replace(
       /[\u064B-\u065F\u0670\u0610-\u061A\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g,
       "",
-    ) // إزالة التشكيل
-    .replace(/ـ/g, "") // إزالة التطويل
-    .replace(/[أإآٱ]/g, "ا") // توحيد الألف
-    .replace(/ى/g, "ي") // توحيد الألف المقصورة
+    )
+    .replace(/ـ/g, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ى/g, "ي")
     .replace(/\s+/g, " ")
     .trim() ?? "";
-
 
 export default function Elfehrest({ onClose, onSelect }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const surahs = quran.data.surahs;
+  const [surahs, setSurahs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const db = await getDb();
+      const rows = await db.getAllAsync(
+        `SELECT id AS number, name, revelation_type AS revelationType, total_ayahs AS ayahsCount
+         FROM surahs ORDER BY id ASC`,
+      );
+      setSurahs(rows);
+      setLoading(false);
+    })();
+  }, [surahs]);
 
   const filteredSurahs = surahs.filter((surah) => {
     const normalizedQuery = removeTashkeel(searchQuery);
@@ -47,22 +60,23 @@ export default function Elfehrest({ onClose, onSelect }) {
     return matchesSearch && matchesType;
   });
 
-  const getFirstPage = (surahNumber) => {
-    const surah = surahs.find((s) => s.number === surahNumber);
-    if (surah.ayahs[0].page > 0) {
-      return surah.ayahs[0].page;
-    }
-    return 1;
+  const getFirstPage = async (surahNumber) => {
+    const db = await getDb();
+    const row = await db.getFirstAsync(
+      `SELECT page FROM ayahs WHERE surah_id = ? ORDER BY ayah_number ASC LIMIT 1`,
+      [surahNumber],
+    );
+    return row?.page > 0 ? row.page : 1;
   };
 
-  const handleSurahPress = (surah) => {
-    const firstPage = getFirstPage(surah.number);
-    return firstPage - 1;
+  const handleSurahPress = async (surah) => {
+    const firstPage = await getFirstPage(surah.number);
+    onSelect(firstPage - 1);
   };
 
   const renderSeparator = () => <View style={styles.separator} />;
 
-  const AnimatedSurahItem = ({ item, index }) => {
+  const AnimatedSurahItem = ({ item }) => {
     const scaleValue = new Animated.Value(1);
 
     const handlePressIn = () => {
@@ -85,16 +99,11 @@ export default function Elfehrest({ onClose, onSelect }) {
       <TouchableOpacity
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        onPress={() => onSelect(handleSurahPress(item))}
-        activeOpacity={0.9}
+        onPress={() => handleSurahPress(item)}
+        activeOpacity={1}
       >
         <Animated.View
-          style={[
-            styles.item,
-            {
-              transform: [{ scale: scaleValue }],
-            },
-          ]}
+          style={[styles.item, { transform: [{ scale: scaleValue }] }]}
         >
           <View
             style={[
@@ -126,7 +135,7 @@ export default function Elfehrest({ onClose, onSelect }) {
                   size={14}
                   color={theme.Tcolors.textGray}
                 />
-                <Text style={styles.ayahsCount}>{item.ayahs.length} آية</Text>
+                <Text style={styles.ayahsCount}>{item.ayahsCount} آية</Text>
               </View>
             </View>
           </View>
@@ -138,6 +147,14 @@ export default function Elfehrest({ onClose, onSelect }) {
       </TouchableOpacity>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.emptyContainer]}>
+        <ActivityIndicator size="large" color={theme.Tcolors.primaryLight} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -154,7 +171,6 @@ export default function Elfehrest({ onClose, onSelect }) {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Search Bar */}
         <View style={styles.searchContainer}>
           <Ionicons
             name="search"
@@ -180,7 +196,6 @@ export default function Elfehrest({ onClose, onSelect }) {
           )}
         </View>
 
-        {/* Filter Buttons */}
         <View style={styles.filterContainer}>
           <TouchableOpacity
             style={[
@@ -239,13 +254,10 @@ export default function Elfehrest({ onClose, onSelect }) {
         <Text style={styles.resultsCount}>{filteredSurahs.length} سورة</Text>
       </View>
 
-      {/* Surahs List */}
       <FlatList
         data={filteredSurahs}
         keyExtractor={(item) => item.number.toString()}
-        renderItem={({ item, index }) => (
-          <AnimatedSurahItem item={item} index={index} />
-        )}
+        renderItem={({ item }) => <AnimatedSurahItem item={item} />}
         ItemSeparatorComponent={renderSeparator}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
@@ -271,7 +283,7 @@ const styles = StyleSheet.create({
     direction: "rtl",
   },
   header: {
-    backgroundColor: theme.Tcolors.primaryBackground,
+    backgroundColor: theme.Tcolors.secondaryBackground,
     paddingVertical: theme.Spacing.md,
     paddingHorizontal: theme.Spacing.md,
     borderBottomLeftRadius: 24,
