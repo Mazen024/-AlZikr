@@ -23,10 +23,7 @@
     "android": {
       "versionCode": 1,
       "package": "com.mazen.alzikr",
-      "permissions": [
-        "INTERNET",
-        "INTERNET"
-      ],
+      "permissions": ["INTERNET", "INTERNET"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#F8F1E4"
@@ -49,10 +46,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo.png",
-          "imageWidth": 300,
+          "image": "./assets/images/splash.png",
+          "imageWidth": 400,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#0c1520",
+          "dark": {
+            "backgroundColor": "#0c1520"
+          }
         }
       ],
       "expo-asset",
